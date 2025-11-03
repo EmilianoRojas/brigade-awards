@@ -1,0 +1,99 @@
+-- This script fully seeds the database for the Brigade Awards app.
+-- It corrects schema issues and populates all necessary data.
+
+-- Step 1: Update user_group CHECK constraint to include all required groups, including 'admin'.
+-- This fixes the "violates check constraint 'valid_user_group'" error.
+-- First, drop the old constraint if it exists to avoid conflicts.
+ALTER TABLE public.users DROP CONSTRAINT IF EXISTS valid_user_group;
+
+-- Then, add the new, more inclusive constraint.
+ALTER TABLE public.users ADD CONSTRAINT valid_user_group CHECK (user_group IN ('fundadores', 'novias', 'extras', 'honorifico', 'admin'));
+
+-- Step 2: Schema Correction - Remove unnecessary password_hash from public.users
+-- This column should only exist in the auth.users table.
+ALTER TABLE public.users DROP COLUMN IF EXISTS password_hash;
+
+-- Step 3: Add a 'full_name' column to the users table for display purposes.
+-- This uses ALTER TABLE... ADD COLUMN IF NOT EXISTS to be safe if run multiple times.
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS full_name TEXT;
+
+-- Step 4: Clear existing data to ensure a clean slate.
+-- The order is important to respect foreign key constraints.
+DELETE FROM public.final_votes;
+DELETE FROM public.nominations;
+DELETE FROM public.awards;
+DELETE FROM public.users;
+
+-- Step 5: Insert all users with their correct UUIDs, group, gender, and full name.
+INSERT INTO public.users (id, username, full_name, gender, user_group) VALUES
+('e5a9c42a-4a6c-4b5d-9b1e-2c7f8a3d1b9e', 'admin', 'Admin User', 'hombre', 'admin'),
+('dba120b7-f356-46b4-8035-5ce1bfcc6b27', 'bachi', 'Bachi', 'hombre', 'fundadores'),
+('3869e296-037d-4033-820e-509703a13f21', 'leonela', 'Leonela', 'mujer', 'novias'),
+('aed835c3-572b-4a6c-a02b-148695c03da6', 'leomarys', 'Leomarys', 'mujer', 'extras'),
+('2202222f-01ef-43ad-9969-1af721645397', 'maria', 'Maria', 'mujer', 'novias'),
+('8f9ce4ea-9231-46ed-8317-fd4e6426d480', 'mangel', 'Mangel', 'hombre', 'fundadores'),
+('f45ba71f-eadc-4138-9bbf-0a87f60364db', 'lala', 'Lala', 'hombre', 'fundadores'),
+('114043e8-55a3-4de5-a20b-6cd77dcf19dd', 'albert', 'Albert', 'hombre', 'fundadores'),
+('e389d3f0-a0d0-4145-b983-a467ec05120f', 'alba_b', 'Alba B', 'mujer', 'novias'),
+('8f13b371-23c9-4016-bd46-b3cfbe9cf6e6', 'guerrero', 'Guerrero', 'hombre', 'fundadores'),
+('64a58545-1a5f-42e1-9f93-575da5a11214', 'rebeca', 'Rebeca', 'mujer', 'novias'),
+('cffea63a-3f23-4170-a374-8abaa50bcc15', 'calita', 'Calita', 'hombre', 'extras'),
+('8b3b114b-1adc-4845-8388-e37def90245b', 'Martinez', 'Martinez', 'hombre', 'extras'),
+('686b88cd-a007-4ba8-85e7-aa87a9410084', 'billy', 'Billy', 'hombre', 'fundadores'),
+('b788196f-2d61-43ff-b420-f4384b7db6a4', 'alba', 'Alba', 'mujer', 'honorifico'),
+('549a8b8f-6693-4b5e-9794-01cf2058d00f', 'niels', 'Niels', 'hombre', 'honorifico'),
+('0f9d02ca-a874-4f0b-a6f0-86d003401294', 'wilmen', 'Wilmen', 'hombre', 'fundadores'),
+('935b16c2-3f0c-4e86-a8b4-68391fd45c4b', 'lujan', 'Lujan', 'hombre', 'fundadores'),
+('1cd2e09a-9df8-43a2-b1ab-b8ad940d7130', 'Adriana', 'Adriana', 'mujer', 'extras'),
+('1657ae7a-dec9-47a9-8e7f-67d96ae67f7c', 'jimenez', 'Jimenez', 'hombre', 'extras'),
+('eadb40a7-3a64-4ac9-be09-fcde89c27b6d', 'fita', 'Fita', 'hombre', 'fundadores'),
+('140c456a-4b01-4466-b093-af2ef438c27e', 'diana', 'Diana', 'mujer', 'novias');
+
+-- Step 6: Link partners together now that all users exist in the table.
+UPDATE public.users SET partner_user_id = '3869e296-037d-4033-820e-509703a13f21', is_partnered = true WHERE username = 'bachi';
+UPDATE public.users SET partner_user_id = 'dba120b7-f356-46b4-8035-5ce1bfcc6b27', is_partnered = true WHERE username = 'leonela';
+
+UPDATE public.users SET partner_user_id = '140c456a-4b01-4466-b093-af2ef438c27e', is_partnered = true WHERE username = 'mangel';
+UPDATE public.users SET partner_user_id = '8f9ce4ea-9231-46ed-8317-fd4e6426d480', is_partnered = true WHERE username = 'diana';
+
+UPDATE public.users SET partner_user_id = 'e389d3f0-a0d0-4145-b983-a467ec05120f', is_partnered = true WHERE username = 'albert';
+UPDATE public.users SET partner_user_id = '114043e8-55a3-4de5-a20b-6cd77dcf19dd', is_partnered = true WHERE username = 'alba_b';
+
+UPDATE public.users SET partner_user_id = '64a58545-1a5f-42e1-9f93-575da5a11214', is_partnered = true WHERE username = 'guerrero';
+UPDATE public.users SET partner_user_id = '8f13b371-23c9-4016-bd46-b3cfbe9cf6e6', is_partnered = true WHERE username = 'rebeca';
+
+UPDATE public.users SET partner_user_id = '2202222f-01ef-43ad-9969-1af721645397', is_partnered = true WHERE username = 'billy';
+UPDATE public.users SET partner_user_id = '686b88cd-a007-4ba8-85e7-aa87a9410084', is_partnered = true WHERE username = 'maria';
+
+UPDATE public.users SET partner_user_id = 'b788196f-2d61-43ff-b420-f4384b7db6a4', is_partnered = true WHERE username = 'niels';
+UPDATE public.users SET partner_user_id = '549a8b8f-6693-4b5e-9794-01cf2058d00f', is_partnered = true WHERE username = 'alba';
+
+-- Step 7: Insert all awards with their respective nomination and voting rules.
+INSERT INTO public.awards (name, description, max_nominations, nomination_criteria, voting_criteria) VALUES
+('Premio Notas', 'Recognizing the most memorable moments.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}'),
+('Premio Demon', 'For the most devilish charm.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}'),
+('Premio Extra del Ano', 'Celebrating the standout supporting role.', 3, '{"groups": ["extras"]}', '{"groups": ["fundadores", "honorifico", "novias"]}'),
+('Premio Calvo', 'For the best bald look.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}'),
+('Premio Peludo', 'For the most luscious hair.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}'),
+('Premio Turras', 'For the most epic party moments.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}'),
+('Premio Cotillon', 'Best party spirit.', 3, '{"anyOf": [{"groups": ["novias"]}, {"groups": ["honorifico"], "genders": ["mujer"]}]}', '{"notGroups": ["extras"]}'),
+('Premio Miss', 'Celebrating the queen of the group.', 3, '{"genders": ["mujer"]}', '{"groups": ["fundadores", "honorifico", "extras", "novias"]}'),
+('Premio Mister', 'Celebrating the king of the group.', 3, '{"genders": ["hombre"]}', '{"groups": ["fundadores", "honorifico", "extras", "novias"]}'),
+('Premio C bus K', 'For the most sought-after person.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}'),
+('Premio Petado', 'Fittest guy of the year.', 3, '{"genders": ["hombre"]}', '{"groups": ["fundadores", "honorifico", "extras", "novias"]}'),
+('Premio Petada', 'Fittest girl of the year.', 3, '{"genders": ["mujer"]}', '{"groups": ["fundadores", "honorifico", "extras", "novias"]}'),
+('Premio Modo Avion', 'For the one who disappears the most.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}'),
+('Premio Spotify', 'For the best music taste.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}'),
+('Premio Chota', 'For the biggest snitch.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}'),
+('Premio Monas', 'For the cutest person.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}'),
+('Premio Verdades', 'For the most brutally honest person.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}'),
+('Premio Mas Puntual', 'Always on time.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}'),
+('Premio Mas Impuntual', 'Always late.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}'),
+('Premio Rata', 'For the stingiest one.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}'),
+('Premio Rasca y Pica (Duo)', 'The couple that scratches and itches together, wins together.', 1, '{"groups": ["fundadores"], "is_partnered": true}', '{"groups": ["fundadores", "honorifico"]}'),
+('Premio Outfit', 'Best dressed of the night (activates at a specific time).', 1, '{"groups": ["fundadores", "honorifico", "extras", "novias"]}', '{"groups": ["fundadores", "honorifico", "extras", "novias"]}'),
+('Premio Sonrisa Golfa Chicas', 'For the most mischievous smile (women).', 3, '{"genders": ["mujer"]}', '{"groups": ["fundadores", "honorifico", "extras", "novias"]}'),
+('Premio Sonrisa Golfa Chicos', 'For the most mischievous smile (men).', 3, '{"genders": ["hombre"]}', '{"groups": ["fundadores", "honorifico", "extras", "novias"]}'),
+('Premio NPC', 'For the most non-player character behavior.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}');
+
+-- End of script

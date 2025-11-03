@@ -1,0 +1,18 @@
+-- This script manually triggers the metadata synchronization for ALL users.
+-- By performing a harmless update on each user's public profile, it fires the
+-- `on_user_profile_change` trigger. This copies the correct `user_group`,
+-- `partner_id`, `gender`, and `is_partnered` fields from the public.users table
+-- into the protected auth.users.raw_user_meta_data field.
+
+-- Run this script in your Supabase SQL Editor after updating the RPC functions
+-- to ensure all users have the correct, up-to-date metadata in their JWTs.
+
+UPDATE public.users
+SET
+  -- We perform a no-op update to trigger the function.
+  -- This sets the username to its current value, causing no data change
+  -- but still activating the AFTER UPDATE trigger for every row.
+  username = username;
+
+-- After running this, all users' JWTs will contain the complete metadata
+-- needed for the application's authorization and filtering logic.

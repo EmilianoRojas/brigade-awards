@@ -1,0 +1,26 @@
+-- This function retrieves all unique nominees for a given award_id.
+-- It's used during the FINAL_VOTING phase to get the list of candidates.
+-- By creating this as a database function, we can call it efficiently via RPC.
+
+CREATE OR REPLACE FUNCTION get_finalists_for_award(p_award_id UUID)
+RETURNS TABLE (
+    id UUID,
+    full_name TEXT,
+    avatar_url TEXT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        u.id,
+        u.full_name,
+        COALESCE(u.avatar_url, 'https://picsum.photos/seed/' || u.id::text || '/200') AS avatar_url
+    FROM
+        public.nominations n
+    JOIN
+        public.users u ON n.nominee_user_id = u.id
+    WHERE
+        n.award_id = p_award_id
+    GROUP BY
+        u.id, u.full_name, u.avatar_url;
+END;
+$$ LANGUAGE plpgsql;

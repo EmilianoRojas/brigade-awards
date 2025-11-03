@@ -1,0 +1,5 @@
+{
+  "name": "Brigade Awards",
+  "description": "A private web application for a multi-phase awards voting system, allowing users to nominate and cast final votes for various awards.",
+  "requestFramePermissions": []
+}

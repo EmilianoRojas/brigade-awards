@@ -1,0 +1,20 @@
+-- This script manually triggers the metadata synchronization for the admin user.
+-- By performing a harmless update on the public user profile, it fires the
+-- `on_user_profile_change` trigger we created. This trigger copies the
+-- correct `user_group` and `partner_id` from the public.users table into the
+-- protected auth.users.raw_user_meta_data field.
+
+-- Run this script in your Supabase SQL Editor to fix the admin's permissions.
+
+UPDATE public.users
+SET
+  -- We perform a no-op update to trigger the function.
+  -- This sets the username to its current value, causing no data change
+  -- but still activating the AFTER UPDATE trigger.
+  username = username
+WHERE
+  -- Target only the admin user.
+  username = 'admin';
+
+-- After running this, the admin's JWT will contain the correct metadata
+-- and they will be able to see all awards.

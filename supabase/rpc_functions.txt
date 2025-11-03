@@ -1,0 +1,172 @@
+-- This script creates/replaces all necessary PostgreSQL functions (RPCs)
+-- for the Brigade Awards application. Running this single script ensures
+-- the backend database logic is up-to-date.
+
+-- Drop existing functions to ensure a clean update, ignoring errors if they don't exist.
+DROP FUNCTION IF EXISTS get_finalists_for_award(UUID);
+DROP FUNCTION IF EXISTS get_award_results(UUID);
+DROP FUNCTION IF EXISTS submit_user_nominations(UUID, UUID, UUID[]);
+DROP FUNCTION IF EXISTS get_user_votes_for_all_awards(UUID);
+
+-- FIX: Added CASCADE to resolve dependency error. This safely drops the function
+-- and its dependent trigger ('on_user_profile_change') before they are recreated.
+DROP FUNCTION IF EXISTS public.propagate_user_metadata() CASCADE;
+
+-- -----------------------------------------------------------------------------
+-- Function: get_finalists_for_award
+-- Description: Retrieves the unique list of nominated users for a given award.
+-- Used during the FINAL_VOTING phase. Returns all data needed by the frontend,
+-- including partner_id for voting restrictions.
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_finalists_for_award(p_award_id UUID)
+RETURNS TABLE (
+    id UUID,
+    full_name TEXT,
+    avatar_url TEXT,
+    partner_id UUID
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT DISTINCT
+        u.id,
+        u.full_name,
+        COALESCE(u.avatar_url, 'https://picsum.photos/seed/' || u.id::text || '/200') AS avatar_url,
+        u.partner_user_id AS partner_id
+    FROM
+        public.nominations n
+    JOIN
+        public.users u ON n.nominee_user_id = u.id
+    WHERE
+        n.award_id = p_award_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- -----------------------------------------------------------------------------
+-- Function: get_award_results
+-- Description: Aggregates final vote counts for a given award.
+-- Returns a list of nominees ranked by vote count, used for the RESULTS phase.
+-- FIX: Refactored to group by the primary key (u.id), which is more robust
+-- and efficient as other selected user columns are functionally dependent on it.
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_award_results(p_award_id UUID)
+RETURNS TABLE (
+    nominee_id UUID,
+    full_name TEXT,
+    avatar_url TEXT,
+    vote_count BIGINT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        u.id AS nominee_id,
+        u.full_name,
+        COALESCE(u.avatar_url, 'https://picsum.photos/seed/' || u.id::text || '/200') AS avatar_url,
+        count(*) AS vote_count
+    FROM
+        public.final_votes fv
+    JOIN
+        public.users u ON fv.nominee_user_id = u.id
+    WHERE
+        fv.award_id = p_award_id
+    GROUP BY
+        u.id -- Grouping by the primary key is sufficient and robust.
+    ORDER BY
+        vote_count DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- -----------------------------------------------------------------------------
+-- Function: submit_user_nominations
+-- Description: Atomically submits a user's nominations for an award.
+-- It first deletes any previous nominations for that user/award pair,
+-- then inserts the new ones. This makes the operation idempotent.
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION submit_user_nominations(
+    p_award_id UUID,
+    p_user_id UUID,
+    p_nominee_ids UUID[]
+)
+RETURNS void AS $$
+BEGIN
+    -- Delete existing nominations for this user and award to handle re-submissions
+    DELETE FROM public.nominations
+    WHERE user_id = p_user_id AND award_id = p_award_id;
+
+    -- Insert the new nominations from the provided array
+    INSERT INTO public.nominations (award_id, user_id, nominee_user_id)
+    SELECT p_award_id, p_user_id, nominee_id
+    FROM unnest(p_nominee_ids) AS nominee_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- -----------------------------------------------------------------------------
+-- Function: get_user_votes_for_all_awards
+-- Description: Fetches all of a user's recorded votes (both nominations and
+-- final votes) across all awards. This is used to populate the voting page
+-- with the user's current selections or show they have already voted.
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_user_votes_for_all_awards(p_user_id UUID)
+RETURNS TABLE (
+    award_id UUID,
+    nominations UUID[],
+    final_vote UUID
+) AS $$
+BEGIN
+    RETURN QUERY
+    WITH user_nominations AS (
+        SELECT
+            n.award_id,
+            array_agg(n.nominee_user_id) AS nominations
+        FROM public.nominations n
+        WHERE n.user_id = p_user_id
+        GROUP BY n.award_id
+    ),
+    user_final_votes AS (
+        SELECT
+            fv.award_id,
+            fv.nominee_user_id AS final_vote
+        FROM public.final_votes fv
+        WHERE fv.user_id = p_user_id
+    )
+    SELECT
+        a.id AS award_id,
+        un.nominations,
+        ufv.final_vote
+    FROM public.awards a
+    LEFT JOIN user_nominations un ON a.id = un.award_id
+    LEFT JOIN user_final_votes ufv ON a.id = ufv.award_id
+    -- Only return rows for awards where the user has actually participated
+    WHERE un.nominations IS NOT NULL OR ufv.final_vote IS NOT NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- -----------------------------------------------------------------------------
+-- Function & Trigger: Propagate public.users data to auth.users metadata
+-- Description: This function and trigger keep the user_metadata in the auth.users
+-- table synchronized with the public profile data.
+-- FIX: This is now updated to include `gender` and `is_partnered` to enable
+-- comprehensive eligibility checks directly from the JWT.
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.propagate_user_metadata()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE auth.users
+  SET raw_user_meta_data = raw_user_meta_data || jsonb_build_object(
+      'user_group', NEW.user_group,
+      'partner_id', NEW.partner_user_id,
+      'gender', NEW.gender,
+      'is_partnered', NEW.is_partnered
+    )
+  WHERE id = NEW.id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Drop the trigger if it exists to ensure a clean update.
+DROP TRIGGER IF EXISTS on_user_profile_change ON public.users;
+
+-- Create the trigger to fire AFTER a user profile is inserted or updated.
+CREATE TRIGGER on_user_profile_change
+  AFTER INSERT OR UPDATE ON public.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.propagate_user_metadata();
