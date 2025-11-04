@@ -118,7 +118,7 @@ BEGIN
             n.award_id,
             array_agg(n.nominee_user_id) AS nominations
         FROM public.nominations n
-        WHERE n.user_id = p_user_id
+        WHERE n.nominator_id = p_user_id
         GROUP BY n.award_id
     ),
     user_final_votes AS (
@@ -126,7 +126,7 @@ BEGIN
             fv.award_id,
             fv.nominee_user_id AS final_vote
         FROM public.final_votes fv
-        WHERE fv.user_id = p_user_id
+        WHERE fv.voter_id = p_user_id
     )
     SELECT
         a.id AS award_id,
