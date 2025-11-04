@@ -81,7 +81,7 @@ const AdminPage: React.FC = () => {
         return (
             <>
                 <div className="container mx-auto p-4 text-center">
-                    <p>You must be logged in to view this page.</p>
+                    <p>Debes iniciar sesión para ver esta página.</p>
                 </div>
             </>
         );
@@ -91,7 +91,7 @@ const AdminPage: React.FC = () => {
         return (
             <>
                 <div className="container mx-auto p-4 text-center">
-                    <p>You do not have permission to access this page.</p>
+                    <p>No tienes permiso para acceder a esta página.</p>
                 </div>
             </>
         );
@@ -100,36 +100,36 @@ const AdminPage: React.FC = () => {
     return (
         <>
             <div className="container mx-auto p-4">
-                <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
+                <h1 className="text-2xl font-bold mb-4">Panel de Administración</h1>
 
                 <div className="mb-8 p-4 border rounded-lg shadow-sm">
-                    <h2 className="text-xl font-semibold mb-2">Bulk Phase Management</h2>
+                    <h2 className="text-xl font-semibold mb-2">Gestión de Fases en Lote</h2>
                     <div className="flex space-x-4">
                         <Button onClick={() => handleBulkPhaseChange('NOMINATION', 'FINAL_VOTING')}>
-                            End Nomination Phase for All
+                            Finalizar Fase de Nominación para Todos
                         </Button>
                         <Button onClick={() => handleBulkPhaseChange('FINAL_VOTING', 'RESULTS')}>
-                            End Voting Phase for All
+                            Finalizar Fase de Votación para Todos
                         </Button>
                         <Button onClick={() => handleBulkPhaseChange('RESULTS', 'CLOSED')}>
-                            Close All Awards
+                            Cerrar Todas las Premiaciones
                         </Button>
                     </div>
                 </div>
 
                 <div>
-                    <h2 className="text-xl font-semibold mb-2">Individual Award Status</h2>
+                    <h2 className="text-xl font-semibold mb-2">Estado Individual de Premiaciones</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {awards.map(award => (
                             <div key={award.id} className="p-4 border rounded-lg shadow-sm">
                                 <h3 className="text-lg font-semibold">{award.name}</h3>
-                                <p>Current Phase: <span className="font-mono bg-gray-200 px-2 py-1 rounded">{award.phase}</span></p>
+                                <p>Fase Actual: <span className="font-mono bg-gray-200 px-2 py-1 rounded">{award.phase}</span></p>
                                 {award.phase === 'RESULTS' && (
                                     <Button
                                         onClick={() => alert('Show results logic to be implemented')}
                                         className="mt-4"
                                     >
-                                        View Results
+                                        Ver Resultados
                                     </Button>
                                 )}
                             </div>

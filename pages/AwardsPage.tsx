@@ -15,7 +15,7 @@ const AwardsPage: React.FC<AwardsPageProps> = ({ onSelectAward }) => {
     const { showNotification } = useNotification();
     const [awards, setAwards] = useState<Award[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    
+
     useEffect(() => {
         const fetchAwards = async () => {
             if (!token) return;
@@ -40,9 +40,9 @@ const AwardsPage: React.FC<AwardsPageProps> = ({ onSelectAward }) => {
 
     return (
         <div>
-            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl mb-8">Awards</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl mb-8">Premiaciones</h2>
             {awards.length === 0 ? (
-                <p className="text-gray-400">No awards available at the moment.</p>
+                <p className="text-gray-400">No hay premiaciones disponibles en este momento.</p>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {awards.map((award) => (
