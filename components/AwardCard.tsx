@@ -7,17 +7,17 @@ interface AwardCardProps {
 }
 
 const phaseStyles: Record<Phase, { bg: string; text: string; label: string }> = {
-    NOMINATION: { bg: 'bg-blue-500', text: 'text-blue-100', label: 'Nomination Open' },
-    FINAL_VOTING: { bg: 'bg-green-500', text: 'text-green-100', label: 'Final Voting' },
-    RESULTS: { bg: 'bg-purple-500', text: 'text-purple-100', label: 'Results' },
-    CLOSED: { bg: 'bg-gray-600', text: 'text-gray-200', label: 'Closed' },
+    NOMINATION: { bg: 'bg-blue-500', text: 'text-blue-100', label: 'Nominaciones Abiertas' },
+    FINAL_VOTING: { bg: 'bg-green-500', text: 'text-green-100', label: 'Votaciones' },
+    RESULTS: { bg: 'bg-purple-500', text: 'text-purple-100', label: 'Resultados' },
+    CLOSED: { bg: 'bg-gray-600', text: 'text-gray-200', label: 'Cerrado' },
 };
 
 const AwardCard: React.FC<AwardCardProps> = ({ award, onSelect }) => {
     const style = phaseStyles[award.phase] || phaseStyles.CLOSED;
-    
+
     return (
-        <div 
+        <div
             className="bg-gray-800 rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-1 transition-transform duration-300 ease-in-out cursor-pointer flex flex-col"
             onClick={() => onSelect(award)}
         >
@@ -33,8 +33,8 @@ const AwardCard: React.FC<AwardCardProps> = ({ award, onSelect }) => {
                 </p>
             </div>
             <div className="bg-gray-700 px-6 py-3">
-                 <p className="text-indigo-400 text-sm font-medium">
-                    {award.phase === 'NOMINATION' ? `Select up to ${award.max_nominations} nominees` : 'View Details & Vote'}
+                <p className="text-indigo-400 text-sm font-medium">
+                    {award.phase === 'NOMINATION' ? `Selecciona ${award.max_nominations} nominados` : 'Ver Detalles y Votar'}
                 </p>
             </div>
         </div>

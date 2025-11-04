@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import Spinner from '../components/Spinner';
 import Button from '../components/Button';
 import { useNotification } from '../contexts/NotificationContext';
-import { toggleAwardActive, getAllAwards } from '../services/api';
+import { toggleAwardActive, getAllAwards, bulkActivateAwards, bulkDeactivateAwards } from '../services/api';
 
 const AdminPage: React.FC = () => {
     const { user, isAdmin } = useAuth();
@@ -98,6 +98,29 @@ const AdminPage: React.FC = () => {
         }
     };
 
+    const handleBulkStatusChange = async (activate: boolean) => {
+        try {
+            const token = (await supabase.auth.getSession()).data.session?.access_token;
+            if (!token) {
+                throw new Error("Authentication token not found.");
+            }
+
+            if (activate) {
+                await bulkActivateAwards(token);
+            } else {
+                await bulkDeactivateAwards(token);
+            }
+
+            setAwards(prevAwards =>
+                prevAwards.map(award => ({ ...award, active: activate }))
+            );
+            addNotification(`All awards have been ${activate ? 'activated' : 'deactivated'}.`, 'success');
+        } catch (error: any) {
+            console.error('Error changing bulk award status:', error);
+            addNotification(error.message || 'Failed to change bulk award status', 'error');
+        }
+    };
+
     if (loading) {
         return <Spinner />;
     }
@@ -142,13 +165,25 @@ const AdminPage: React.FC = () => {
                     </div>
                 </div>
 
+                <div className="mb-8 p-4 border rounded-lg shadow-sm">
+                    <h2 className="text-xl font-semibold mb-2">Gestión de Estado en Lote</h2>
+                    <div className="flex space-x-4">
+                        <Button onClick={() => handleBulkStatusChange(true)}>
+                            Activar Todas las Premiaciones
+                        </Button>
+                        <Button onClick={() => handleBulkStatusChange(false)}>
+                            Desactivar Todas las Premiaciones
+                        </Button>
+                    </div>
+                </div>
+
                 <div>
                     <h2 className="text-xl font-semibold mb-2">Estado Individual de Premiaciones</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {awards.map(award => (
                             <div key={award.id} className="p-4 border rounded-lg shadow-sm">
                                 <h3 className="text-lg font-semibold">{award.name}</h3>
-                                <p>Fase Actual: <span className="font-mono bg-gray-200 px-2 py-1 rounded">{award.phase}</span></p>
+                                <p>Fase Actual: <span className="font-mono text-gray-600 bg-gray-200 px-2 py-1 rounded">{award.phase}</span></p>
                                 <p>Estado: {award.active ? <span className="text-green-600 font-bold">Activo</span> : <span className="text-red-600 font-bold">Inactivo</span>}</p>
                                 <Button
                                     onClick={() => handleToggleActive(award.id, award.active)}

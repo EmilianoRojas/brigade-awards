@@ -86,3 +86,17 @@ export const getAllAwards = async (token: string): Promise<Award[]> => {
     });
     return awards || [];
 };
+
+export const bulkActivateAwards = (token: string): Promise<{ message: string }> => {
+    return apiFetch('/bulk-activate-awards', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+    });
+};
+
+export const bulkDeactivateAwards = (token: string): Promise<{ message: string }> => {
+    return apiFetch('/bulk-deactivate-awards', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+    });
+};
