@@ -42,3 +42,12 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         </NotificationContext.Provider>
     );
 };
+
+export const useNotification = () => {
+    const context = React.useContext(NotificationContext);
+    if (context === undefined) {
+        throw new Error('useNotification must be used within a NotificationProvider');
+    }
+    // The addNotification function is an alias for showNotification for semantic clarity.
+    return { ...context, addNotification: context.showNotification };
+};

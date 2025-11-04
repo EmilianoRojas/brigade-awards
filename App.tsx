@@ -4,6 +4,7 @@ import { useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
 import AwardsPage from './pages/AwardsPage';
 import VotingPage from './pages/VotingPage';
+import AdminPage from './pages/AdminPage';
 import { Award } from './types';
 import Header from './components/Header';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -11,16 +12,24 @@ import Snackbar from './components/Snackbar';
 import { useNotification } from './hooks/useNotification';
 
 const AppContent: React.FC = () => {
-    const { isAuthenticated, user, isLoading } = useAuth();
+    const { isAuthenticated, user, isLoading, isAdmin } = useAuth();
     const [selectedAward, setSelectedAward] = useState<Award | null>(null);
+    const [currentPage, setCurrentPage] = useState<'awards' | 'voting' | 'admin'>('awards');
     const { notification, hideNotification } = useNotification();
 
     const handleSelectAward = (award: Award) => {
         setSelectedAward(award);
+        setCurrentPage('voting');
     };
 
     const handleBackToAwards = () => {
         setSelectedAward(null);
+        setCurrentPage('awards');
+    };
+
+    const navigateTo = (page: 'awards' | 'admin') => {
+        setSelectedAward(null);
+        setCurrentPage(page);
     };
 
     if (isLoading) {
@@ -33,12 +42,14 @@ const AppContent: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-100 font-sans">
-            {isAuthenticated && user && <Header />}
+            {isAuthenticated && user && <Header onNavigate={navigateTo} isAdmin={isAdmin} />}
             <main className="container mx-auto p-4 sm:p-6 lg:p-8">
-                 {!isAuthenticated || !user ? (
+                {!isAuthenticated || !user ? (
                     <LoginPage />
-                ) : selectedAward ? (
+                ) : currentPage === 'voting' && selectedAward ? (
                     <VotingPage award={selectedAward} onBack={handleBackToAwards} />
+                ) : currentPage === 'admin' ? (
+                    <AdminPage />
                 ) : (
                     <AwardsPage onSelectAward={handleSelectAward} />
                 )}

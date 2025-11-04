@@ -76,7 +76,7 @@ INSERT INTO public.awards (name, description, max_nominations, nomination_criter
 ('Premio Calvo', 'For the best bald look.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}'),
 ('Premio Peludo', 'For the most luscious hair.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}'),
 ('Premio Turras', 'For the most epic party moments.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}'),
-('Premio Cotillon', 'Best party spirit.', 3, '{"anyOf": [{"groups": ["novias"]}, {"groups": ["honorifico"], "genders": ["mujer"]}]}', '{"notGroups": ["extras"]}'),
+('Premio Cotillon', 'Best party spirit.', 3, '{"genders": ["mujer"]}', '{"notGroups": ["extras"]}'),
 ('Premio Miss', 'Celebrating the queen of the group.', 3, '{"genders": ["mujer"]}', '{"groups": ["fundadores", "honorifico", "extras", "novias"]}'),
 ('Premio Mister', 'Celebrating the king of the group.', 3, '{"genders": ["hombre"]}', '{"groups": ["fundadores", "honorifico", "extras", "novias"]}'),
 ('Premio C bus K', 'For the most sought-after person.', 3, '{"groups": ["fundadores"]}', '{"groups": ["fundadores", "honorifico"]}'),

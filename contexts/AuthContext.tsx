@@ -1,6 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { AuthUser } from '../types';
-import { decodeJwt } from '../utils/jwt';
 import { supabase } from '../supabaseClient';
 import { Session } from '@supabase/supabase-js';
 
@@ -9,6 +8,7 @@ interface AuthContextType {
     token: string | null;
     user: AuthUser | null;
     isLoading: boolean;
+    isAdmin: boolean;
     logout: () => void;
 }
 
@@ -22,29 +22,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [token, setToken] = useState<string | null>(null);
     const [user, setUser] = useState<AuthUser | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     const handleSession = useCallback((session: Session | null) => {
-        if (session) {
-            const decodedUser = decodeJwt(session.access_token);
-            if (decodedUser) {
-                setToken(session.access_token);
-                setUser(decodedUser);
-            } else {
-                // Token is invalid or expired
-                setToken(null);
-                setUser(null);
-            }
+        if (session?.user) {
+            setToken(session.access_token);
+            // Directly use the user object from the session
+            const authUser: AuthUser = {
+                id: session.user.id,
+                email: session.user.email || '',
+                ...session.user.user_metadata,
+            };
+            setUser(authUser);
+            setIsAdmin(authUser.user_group === 'admin');
         } else {
             setToken(null);
             setUser(null);
+            setIsAdmin(false);
         }
         setIsLoading(false);
     }, []);
-    
+
     useEffect(() => {
         // Fetch the initial session
         supabase.auth.getSession().then(({ data: { session } }) => {
-           handleSession(session);
+            handleSession(session);
         });
 
         // Listen for auth state changes
@@ -71,6 +73,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         token,
         user,
         isLoading,
+        isAdmin,
         logout,
     };
 
