@@ -3,7 +3,7 @@ import { Award, AwardResult, User, UserNomination } from '../types';
 
 const apiFetch = async <T,>(endpoint: string, options: RequestInit = {}): Promise<T> => {
     const url = `${API_BASE_URL}${endpoint}`;
-    
+
     const response = await fetch(url, {
         ...options,
         headers: {
@@ -16,7 +16,7 @@ const apiFetch = async <T,>(endpoint: string, options: RequestInit = {}): Promis
         const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
-    
+
     if (response.status === 204) { // No Content
         return null as T;
     }
@@ -67,7 +67,22 @@ export const submitFinalVote = (awardId: string, nomineeUserId: string, token: s
 
 export const getAwardResults = async (awardId: string, token: string): Promise<AwardResult[]> => {
     const results = await apiFetch<AwardResult[]>(`/get-award-results?award_id=${awardId}`, {
-         headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` }
     });
     return results || [];
+};
+
+export const toggleAwardActive = (awardId: string, active: boolean, token: string): Promise<Award> => {
+    return apiFetch('/toggle-award-active', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: awardId, active }),
+    });
+};
+
+export const getAllAwards = async (token: string): Promise<Award[]> => {
+    const awards = await apiFetch<Award[]>('/get-all-awards', {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    return awards || [];
 };

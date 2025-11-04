@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import Spinner from '../components/Spinner';
 import Button from '../components/Button';
 import { useNotification } from '../contexts/NotificationContext';
+import { toggleAwardActive, getAllAwards } from '../services/api';
 
 const AdminPage: React.FC = () => {
     const { user, isAdmin } = useAuth();
@@ -20,8 +21,11 @@ const AdminPage: React.FC = () => {
             }
             try {
                 setLoading(true);
-                const { data, error } = await supabase.from('awards').select('*').order('name', { ascending: true });
-                if (error) throw error;
+                const token = (await supabase.auth.getSession()).data.session?.access_token;
+                if (!token) {
+                    throw new Error("Authentication token not found.");
+                }
+                const data = await getAllAwards(token);
                 setAwards(data || []);
             } catch (error: any) {
                 console.error('Error fetching awards:', error);
@@ -70,6 +74,27 @@ const AdminPage: React.FC = () => {
         } catch (error: any) {
             console.error('Error updating award phases:', error);
             addNotification(error.message || 'Failed to update award phases', 'error');
+        }
+    };
+
+    const handleToggleActive = async (awardId: string, currentStatus: boolean) => {
+        try {
+            const token = (await supabase.auth.getSession()).data.session?.access_token;
+            if (!token) {
+                throw new Error("Authentication token not found.");
+            }
+
+            const updatedAward = await toggleAwardActive(awardId, !currentStatus, token);
+
+            setAwards(prevAwards =>
+                prevAwards.map(award =>
+                    award.id === awardId ? updatedAward : award
+                )
+            );
+            addNotification(`Award status updated successfully.`, 'success');
+        } catch (error: any) {
+            console.error('Error toggling award status:', error);
+            addNotification(error.message || 'Failed to update award status', 'error');
         }
     };
 
@@ -124,10 +149,17 @@ const AdminPage: React.FC = () => {
                             <div key={award.id} className="p-4 border rounded-lg shadow-sm">
                                 <h3 className="text-lg font-semibold">{award.name}</h3>
                                 <p>Fase Actual: <span className="font-mono bg-gray-200 px-2 py-1 rounded">{award.phase}</span></p>
+                                <p>Estado: {award.active ? <span className="text-green-600 font-bold">Activo</span> : <span className="text-red-600 font-bold">Inactivo</span>}</p>
+                                <Button
+                                    onClick={() => handleToggleActive(award.id, award.active)}
+                                    className="mt-4"
+                                >
+                                    {award.active ? 'Desactivar' : 'Activar'}
+                                </Button>
                                 {award.phase === 'RESULTS' && (
                                     <Button
                                         onClick={() => alert('Show results logic to be implemented')}
-                                        className="mt-4"
+                                        className="mt-4 ml-2"
                                     >
                                         Ver Resultados
                                     </Button>
