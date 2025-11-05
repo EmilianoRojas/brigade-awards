@@ -41,9 +41,9 @@ const AppContent: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-900 text-gray-100 font-sans">
+        <div className="flex flex-col h-screen bg-gray-900 text-gray-100 font-sans">
             {isAuthenticated && user && <Header onNavigate={navigateTo} isAdmin={isAdmin} />}
-            <main className="container mx-auto p-4 sm:p-6 lg:p-8">
+            <main className="flex-grow container mx-auto p-4 sm:p-6 lg:p-8 overflow-y-auto">
                 {!isAuthenticated || !user ? (
                     <LoginPage />
                 ) : currentPage === 'voting' && selectedAward ? (

@@ -151,28 +151,43 @@ const AdminPage: React.FC = () => {
                 <h1 className="text-2xl font-bold mb-4">Panel de Administración</h1>
 
                 <div className="mb-8 p-4 border rounded-lg shadow-sm">
-                    <h2 className="text-xl font-semibold mb-2">Gestión de Fases en Lote</h2>
-                    <div className="flex space-x-4">
-                        <Button onClick={() => handleBulkPhaseChange('NOMINATION', 'FINAL_VOTING')}>
-                            Finalizar Fase de Nominación para Todos
+                    <h2 className="text-lg sm:text-xl font-semibold mb-4">Gestión de Fases en Lote</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <Button
+                            onClick={() => handleBulkPhaseChange('NOMINATION', 'FINAL_VOTING')}
+                            className="w-full text-sm px-4 py-2"
+                        >
+                            Finalizar Nominación
                         </Button>
-                        <Button onClick={() => handleBulkPhaseChange('FINAL_VOTING', 'RESULTS')}>
-                            Finalizar Fase de Votación para Todos
+                        <Button
+                            onClick={() => handleBulkPhaseChange('FINAL_VOTING', 'RESULTS')}
+                            className="w-full text-sm px-4 py-2"
+                        >
+                            Finalizar Votación
                         </Button>
-                        <Button onClick={() => handleBulkPhaseChange('RESULTS', 'CLOSED')}>
-                            Cerrar Todas las Premiaciones
+                        <Button
+                            onClick={() => handleBulkPhaseChange('RESULTS', 'CLOSED')}
+                            className="w-full text-sm px-4 py-2"
+                        >
+                            Cerrar Premiaciones
                         </Button>
                     </div>
                 </div>
 
                 <div className="mb-8 p-4 border rounded-lg shadow-sm">
-                    <h2 className="text-xl font-semibold mb-2">Gestión de Estado en Lote</h2>
-                    <div className="flex space-x-4">
-                        <Button onClick={() => handleBulkStatusChange(true)}>
-                            Activar Todas las Premiaciones
+                    <h2 className="text-lg sm:text-xl font-semibold mb-4">Gestión de Estado en Lote</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Button
+                            onClick={() => handleBulkStatusChange(true)}
+                            className="w-full text-sm px-4 py-2"
+                        >
+                            Activar Todas
                         </Button>
-                        <Button onClick={() => handleBulkStatusChange(false)}>
-                            Desactivar Todas las Premiaciones
+                        <Button
+                            onClick={() => handleBulkStatusChange(false)}
+                            className="w-full text-sm px-4 py-2"
+                        >
+                            Desactivar Todas
                         </Button>
                     </div>
                 </div>
