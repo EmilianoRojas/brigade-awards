@@ -215,7 +215,7 @@ const VotingPage: React.FC = () => {
                                             <div className="flex items-center space-x-3">
                                                 {firstNominee && (
                                                     <div className="flex items-center space-x-2">
-                                                        <img src={firstNominee.avatar_url || `https://picsum.photos/seed/${firstNominee.id}/40`} alt={firstNominee.full_name} className="h-10 w-10 rounded-full" />
+                                                        {/* <img src={firstNominee.avatar_url || `https://picsum.photos/seed/${firstNominee.id}/40`} alt={firstNominee.full_name} className="h-10 w-10 rounded-full" /> */}
                                                         <span className="text-white font-medium">{firstNominee.full_name}</span>
                                                     </div>
                                                 )}
