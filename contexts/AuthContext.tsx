@@ -28,22 +28,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const handleSession = useCallback((session: Session | null) => {
         if (session?.user) {
-            setToken(session.access_token);
-            // Directly use the user object from the session
-            const authUser: AuthUser = {
-                id: session.user.id,
-                email: session.user.email || '',
-                ...session.user.user_metadata,
-            };
-            setUser(authUser);
-            setIsAdmin(authUser.user_group === 'admin');
-        } else {
+            if (session.access_token !== token || session.user.id !== user?.id) {
+                setToken(session.access_token);
+                const authUser: AuthUser = {
+                    id: session.user.id,
+                    email: session.user.email || '',
+                    ...session.user.user_metadata,
+                };
+                setUser(authUser);
+                setIsAdmin(authUser.user_group === 'admin');
+            }
+        } else if (user !== null || token !== null) {
             setToken(null);
             setUser(null);
             setIsAdmin(false);
         }
         setIsLoading(false);
-    }, []);
+    }, [token, user]);
 
     useEffect(() => {
         // Fetch the initial session
