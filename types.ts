@@ -15,6 +15,9 @@ export interface Award {
     description: string;
     phase: Phase;
     max_nominations: number;
+    nomination_criteria?: {
+        is_duo?: boolean;
+    };
     created_at: string;
     active: boolean;
 }

@@ -23,6 +23,7 @@ const VotingPage: React.FC = () => {
     // State for user selections
     const [selectedNominations, setSelectedNominations] = useState<string[]>([]);
     const [selectedFinalVote, setSelectedFinalVote] = useState<string | null>(null);
+    const [selectedNominationPairs, setSelectedNominationPairs] = useState<string[][]>([]);
 
     // State for results
     const [results, setResults] = useState<AwardResult[]>([]);
@@ -49,7 +50,22 @@ const VotingPage: React.FC = () => {
 
                 const currentUserNomination = userNominations.find(v => v.award_id === currentAward.id);
                 if (currentUserNomination) {
-                    setSelectedNominations(currentUserNomination.nominations);
+                    if (currentAward.nomination_criteria?.is_duo) {
+                        // Reconstruct pairs from flat list based on nomination_group_id
+                        const groups: { [key: string]: string[] } = {};
+                        currentUserNomination.nominations.forEach((nom: any) => {
+                            if (nom.nomination_group_id) {
+                                if (!groups[nom.nomination_group_id]) {
+                                    groups[nom.nomination_group_id] = [];
+                                }
+                                groups[nom.nomination_group_id].push(nom.nominee_user_id);
+                            }
+                        });
+                        setSelectedNominationPairs(Object.values(groups));
+                        setSelectedNominations(Object.values(groups).flat());
+                    } else {
+                        setSelectedNominations(currentUserNomination.nominations);
+                    }
                 } else {
                     setSelectedNominations([]);
                 }
@@ -79,20 +95,63 @@ const VotingPage: React.FC = () => {
     }, [fetchPageData]);
 
     const handleNominationToggle = (userId: string) => {
-        setSelectedNominations(prev => {
-            const isSelected = prev.includes(userId);
-            if (isSelected) {
-                return prev.filter(id => id !== userId);
-            }
-            if (award && prev.length < award.max_nominations) {
-                return [...prev, userId];
-            }
-            if (award) {
-                showNotification(`You can only select up to ${award.max_nominations} nominees.`, 'info');
-            }
-            return prev;
-        });
+        if (award?.nomination_criteria?.is_duo) {
+            setSelectedNominationPairs(prevPairs => {
+                const lastPair = prevPairs[prevPairs.length - 1];
+
+                if (lastPair && lastPair.length === 1) {
+                    if (lastPair[0] === userId) return prevPairs; // Avoid pairing with self
+
+                    const updatedLastPair = [...lastPair, userId];
+                    const sortedNewPair = [...updatedLastPair].sort();
+
+                    const pairExists = prevPairs.slice(0, -1).some(p => {
+                        if (p.length !== 2) return false;
+                        const sortedExisting = [...p].sort();
+                        return sortedExisting[0] === sortedNewPair[0] && sortedExisting[1] === sortedNewPair[1];
+                    });
+
+                    if (pairExists) {
+                        showNotification('This exact pair has already been selected.', 'info');
+                        return prevPairs;
+                    }
+
+                    return [...prevPairs.slice(0, -1), updatedLastPair];
+                }
+
+                if (prevPairs.length < award.max_nominations) {
+                    return [...prevPairs, [userId]];
+                }
+
+                showNotification(`You have already selected ${award.max_nominations} pairs. To change a nomination, please remove a pair first.`, 'info');
+                return prevPairs;
+            });
+        } else {
+            setSelectedNominations(prev => {
+                const isSelected = prev.includes(userId);
+                if (isSelected) {
+                    return prev.filter(id => id !== userId);
+                }
+                if (award && prev.length < award.max_nominations) {
+                    return [...prev, userId];
+                }
+                if (award) {
+                    showNotification(`You can only select up to ${award.max_nominations} nominees.`, 'info');
+                }
+                return prev;
+            });
+        }
     };
+
+    const handleRemovePair = (pairIndex: number) => {
+        setSelectedNominationPairs(prevPairs => prevPairs.filter((_, index) => index !== pairIndex));
+    };
+
+    useEffect(() => {
+        if (award?.nomination_criteria?.is_duo) {
+            setSelectedNominations(selectedNominationPairs.flat());
+        }
+    }, [selectedNominationPairs, award]);
 
     const handleFinalVoteSelect = (userId: string) => {
         setSelectedFinalVote(userId);
@@ -104,11 +163,23 @@ const VotingPage: React.FC = () => {
 
         try {
             if (award.phase === 'NOMINATION') {
-                if (selectedNominations.length !== award.max_nominations) {
-                    showNotification(`You must select exactly ${award.max_nominations} nominees.`, 'error');
-                    return;
+                if (award.nomination_criteria?.is_duo) {
+                    if (selectedNominationPairs.some(pair => pair.length !== 2)) {
+                        showNotification('You must select nominees in pairs.', 'error');
+                        return;
+                    }
+                    if (selectedNominationPairs.length !== award.max_nominations) {
+                        showNotification(`You must select exactly ${award.max_nominations} pairs of nominees.`, 'error');
+                        return;
+                    }
+                    await api.submitNominations(award.id, selectedNominationPairs, token);
+                } else {
+                    if (selectedNominations.length !== award.max_nominations) {
+                        showNotification(`You must select exactly ${award.max_nominations} nominees.`, 'error');
+                        return;
+                    }
+                    await api.submitNominations(award.id, selectedNominations, token);
                 }
-                await api.submitNominations(award.id, selectedNominations, token);
                 showNotification('Your nominations have been submitted successfully!', 'success');
             } else if (award.phase === 'FINAL_VOTING' && selectedFinalVote) {
                 await api.submitFinalVote(award.id, selectedFinalVote, token);
@@ -127,6 +198,100 @@ const VotingPage: React.FC = () => {
         if (!award) return null;
         const currentUserNomination = userNominations.find(v => v.award_id === award.id);
         const hasVoted = !!currentUserNomination;
+
+        if (award.nomination_criteria?.is_duo) {
+            return (
+                <div>
+                    <div className="mb-6">
+                        <h3 className="text-lg font-medium text-white">Pares Seleccionados ({selectedNominationPairs.length}/{award.max_nominations})</h3>
+                        {selectedNominationPairs.length > 0 ? (
+                            <div className="mt-4 space-y-3">
+                                {selectedNominationPairs.map((pair, index) => {
+                                    const firstNominee = candidates.find(c => c.id === pair[0]);
+                                    const secondNominee = pair.length > 1 ? candidates.find(c => c.id === pair[1]) : null;
+
+                                    return (
+                                        <div key={index} className="bg-gray-700/50 p-3 rounded-lg flex items-center justify-between animate-fade-in">
+                                            <div className="flex items-center space-x-3">
+                                                {firstNominee && (
+                                                    <div className="flex items-center space-x-2">
+                                                        <img src={firstNominee.avatar_url || `https://picsum.photos/seed/${firstNominee.id}/40`} alt={firstNominee.full_name} className="h-10 w-10 rounded-full" />
+                                                        <span className="text-white font-medium">{firstNominee.full_name}</span>
+                                                    </div>
+                                                )}
+                                                <span className="text-gray-400">+</span>
+                                                {secondNominee ? (
+                                                    <div className="flex items-center space-x-2">
+                                                        <img src={secondNominee.avatar_url || `https://picsum.photos/seed/${secondNominee.id}/40`} alt={secondNominee.full_name} className="h-10 w-10 rounded-full" />
+                                                        <span className="text-white font-medium">{secondNominee.full_name}</span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-gray-400 italic">Selecciona otro nominado</span>
+                                                )}
+                                            </div>
+                                            <button onClick={() => handleRemovePair(index)} className="p-2 rounded-full text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <p className="text-gray-400 mt-2">Selecciona dos nominados para formar un par.</p>
+                        )}
+                    </div>
+
+                    <p className="text-gray-300 mb-2">Selecciona los nominados para el siguiente par.</p>
+                    <div className="space-y-4 mt-6">
+                        {candidates.map(candidate => {
+                            const isSelf = candidate.id === user?.id;
+                            const isPartner = candidate.id === user?.partner_id;
+                            const lastPair = selectedNominationPairs[selectedNominationPairs.length - 1];
+                            const isIncompletePairWithThisCandidate = lastPair && lastPair.length === 1 && lastPair[0] === candidate.id;
+                            const maxPairsReached = selectedNominationPairs.length === award.max_nominations && (!lastPair || lastPair.length === 2);
+
+                            const isDisabled = isSelf || isPartner || hasVoted || maxPairsReached || isIncompletePairWithThisCandidate;
+                            let disabledReason = '';
+                            if (isSelf) disabledReason = "No puedes votar por ti mismo.";
+                            else if (isPartner) disabledReason = "No puedes votar por tu pareja.";
+                            else if (hasVoted) disabledReason = "Ya has enviado tus nominaciones.";
+                            else if (maxPairsReached) disabledReason = `Ya has seleccionado el máximo de ${award.max_nominations} pares.`;
+                            else if (isIncompletePairWithThisCandidate) disabledReason = "Selecciona un nominado diferente para completar el par.";
+
+                            return (
+                                <UserSelectionCard
+                                    key={candidate.id}
+                                    user={candidate}
+                                    isSelected={selectedNominations.includes(candidate.id)}
+                                    isDisabled={isDisabled}
+                                    onToggle={handleNominationToggle}
+                                    selectionType="button"
+                                    disabledReason={disabledReason}
+                                />
+                            );
+                        })}
+                    </div>
+                    {!hasVoted && (
+                        <Button
+                            onClick={handleSubmit}
+                            isLoading={isSubmitting}
+                            disabled={
+                                award.nomination_criteria?.is_duo
+                                    ? selectedNominationPairs.length !== award.max_nominations || selectedNominationPairs.some(p => p.length !== 2)
+                                    : selectedNominations.length !== award.max_nominations
+                            }
+                            className="mt-8 w-full sm:w-auto"
+                        >
+                            Enviar Nominaciones
+                        </Button>
+                    )}
+                </div>
+            );
+        }
+
+        // Fallback for non-duo awards
         return (
             <div>
                 <p className="text-gray-300 mb-2">Selecciona hasta {award.max_nominations} nominados.</p>
@@ -158,7 +323,7 @@ const VotingPage: React.FC = () => {
                     <Button
                         onClick={handleSubmit}
                         isLoading={isSubmitting}
-                        disabled={award && selectedNominations.length !== award.max_nominations}
+                        disabled={selectedNominations.length !== award.max_nominations}
                         className="mt-8 w-full sm:w-auto"
                     >
                         Enviar Nominaciones

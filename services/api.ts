@@ -59,7 +59,7 @@ export const getUserFinalVotes = async (token: string): Promise<UserNomination[]
     return userFinalVotes || [];
 };
 
-export const submitNominations = (awardId: string, nomineeIds: string[], token: string): Promise<void> => {
+export const submitNominations = (awardId: string, nomineeIds: string[] | string[][], token: string): Promise<void> => {
     return apiFetch('/submit-nominations', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },

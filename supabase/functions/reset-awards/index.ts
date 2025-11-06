@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
         const { error: awardsError } = await supabase
             .from('awards')
             .update({ phase: 'NOMINATION' })
-            .neq('id', 0); // This is a placeholder to update all rows
+            .not('id', 'is', null); // This is a placeholder to update all rows
 
         if (awardsError) {
             console.error("Error resetting awards phase:", awardsError.message);
@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
         const { error: votesError } = await supabase
             .from('final_votes')
             .delete()
-            .neq('id', 0); // This is a placeholder to delete all rows
+            .not('id', 'is', null); // This is a placeholder to delete all rows
 
         if (votesError) {
             console.error("Error deleting final votes:", votesError.message);
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
         const { error: nominationsError } = await supabase
             .from('nominations')
             .delete()
-            .neq('id', 0); // This is a placeholder to delete all rows
+            .not('id', 'is', null); // This is a placeholder to delete all rows
 
         if (nominationsError) {
             console.error("Error deleting nominations:", nominationsError.message);
