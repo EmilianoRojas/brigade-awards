@@ -11,6 +11,39 @@ DROP FUNCTION IF EXISTS get_user_votes_for_all_awards(UUID);
 -- FIX: Added CASCADE to resolve dependency error. This safely drops the function
 -- and its dependent trigger ('on_user_profile_change') before they are recreated.
 DROP FUNCTION IF EXISTS public.propagate_user_metadata() CASCADE;
+DROP FUNCTION IF EXISTS public.final_vote_phase_and_nomination_check() CASCADE;
+
+-- -----------------------------------------------------------------------------
+-- Function: final_vote_phase_and_nomination_check
+-- Description: This trigger function ensures that final votes can only be cast
+-- when the corresponding award is in the 'FINAL_VOTING' phase. It also
+-- validates that the nominee was a valid candidate in the nomination phase.
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.final_vote_phase_and_nomination_check()
+RETURNS TRIGGER AS $$
+DECLARE
+  award_phase TEXT;
+  is_nominated BOOLEAN;
+BEGIN
+  -- Check the current phase of the award
+  SELECT phase INTO award_phase FROM public.awards WHERE id = NEW.award_id;
+  IF award_phase != 'FINAL_VOTING' THEN
+    RAISE EXCEPTION 'Final votes can only be submitted during the FINAL_VOTING phase.';
+  END IF;
+
+  -- Verify that the nominee was nominated for this award
+  SELECT EXISTS (
+    SELECT 1 FROM public.nominations
+    WHERE award_id = NEW.award_id AND nominee_user_id = NEW.nominee_user_id
+  ) INTO is_nominated;
+
+  IF NOT is_nominated THEN
+    RAISE EXCEPTION 'The selected user is not a valid nominee for this award.';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- -----------------------------------------------------------------------------
 -- Function: get_finalists_for_award
@@ -90,10 +123,10 @@ RETURNS void AS $$
 BEGIN
     -- Delete existing nominations for this user and award to handle re-submissions
     DELETE FROM public.nominations
-    WHERE user_id = p_user_id AND award_id = p_award_id;
+    WHERE nominator_id = p_user_id AND award_id = p_award_id;
 
     -- Insert the new nominations from the provided array
-    INSERT INTO public.nominations (award_id, user_id, nominee_user_id)
+    INSERT INTO public.nominations (award_id, nominator_id, nominee_user_id)
     SELECT p_award_id, p_user_id, nominee_id
     FROM unnest(p_nominee_ids) AS nominee_id;
 END;

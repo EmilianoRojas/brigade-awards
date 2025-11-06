@@ -16,6 +16,7 @@ export interface Award {
     phase: Phase;
     max_nominations: number;
     created_at: string;
+    active: boolean;
 }
 
 export interface AuthUser {
@@ -31,6 +32,7 @@ export interface UserNomination {
     award_id: string;
     nominations: string[]; // array of user_ids
     final_vote: string | null; // user_id
+    nominee_user_id: string;
 }
 
 export interface AwardResult {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getAwards } from '../services/api';
 import { Award } from '../types';
@@ -6,11 +7,7 @@ import Spinner from '../components/Spinner';
 import AwardCard from '../components/AwardCard';
 import { useNotification } from '../hooks/useNotification';
 
-interface AwardsPageProps {
-    onSelectAward: (award: Award) => void;
-}
-
-const AwardsPage: React.FC<AwardsPageProps> = ({ onSelectAward }) => {
+const AwardsPage: React.FC = () => {
     const { token } = useAuth();
     const { showNotification } = useNotification();
     const [awards, setAwards] = useState<Award[]>([]);
@@ -46,7 +43,9 @@ const AwardsPage: React.FC<AwardsPageProps> = ({ onSelectAward }) => {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {awards.map((award) => (
-                        <AwardCard key={award.id} award={award} onSelect={onSelectAward} />
+                        <Link to={`/voting/${award.id}`} key={award.id}>
+                            <AwardCard award={award} />
+                        </Link>
                     ))}
                 </div>
             )}

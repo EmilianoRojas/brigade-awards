@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { Award, User, UserNomination, AwardResult } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import * as api from '../services/api';
@@ -8,18 +9,16 @@ import UserSelectionCard from '../components/UserSelectionCard';
 import ResultsChart from '../components/ResultsChart';
 import { useNotification } from '../hooks/useNotification';
 
-interface VotingPageProps {
-    award: Award;
-    onBack: () => void;
-}
-
-const VotingPage: React.FC<VotingPageProps> = ({ award, onBack }) => {
+const VotingPage: React.FC = () => {
+    const { awardId } = useParams<{ awardId: string }>();
     const { user, token } = useAuth();
     const { showNotification } = useNotification();
+    const [award, setAward] = useState<Award | null>(null);
     const [candidates, setCandidates] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [userVote, setUserVote] = useState<UserNomination | null>(null);
+    const [userNominations, setUserNominations] = useState<UserNomination[]>([]);
+    const [userFinalVotes, setUserFinalVotes] = useState<UserNomination[]>([]);
 
     // State for user selections
     const [selectedNominations, setSelectedNominations] = useState<string[]>([]);
@@ -29,42 +28,51 @@ const VotingPage: React.FC<VotingPageProps> = ({ award, onBack }) => {
     const [results, setResults] = useState<AwardResult[]>([]);
 
     const fetchPageData = useCallback(async () => {
-        if (!token || !user) return;
+        if (!token || !user || !awardId) return;
         try {
             setIsLoading(true);
 
-            const [fetchedCandidates, userVotes] = await Promise.all([
-                award.phase !== 'RESULTS' ? api.getAwardCandidates(award.id, token) : Promise.resolve([]),
-                api.getUserVotes(token)
-            ]);
+            const awards = await api.getAwards(token);
+            const currentAward = awards.find(a => a.id === awardId);
+            setAward(currentAward || null);
 
-            setCandidates(fetchedCandidates);
-            const currentUserVote = userVotes.find(v => v.award_id === award.id) || null;
-            setUserVote(currentUserVote);
+            if (currentAward) {
+                const [fetchedCandidates, userNominations, userFinalVotes] = await Promise.all([
+                    currentAward.phase !== 'RESULTS' ? api.getAwardCandidates(currentAward.id, token) : Promise.resolve([]),
+                    api.getUserVotes(token),
+                    api.getUserFinalVotes(token)
+                ]);
 
-            if (currentUserVote) {
-                if (award.phase === 'NOMINATION') {
-                    setSelectedNominations(currentUserVote.nominations);
-                } else if (award.phase === 'FINAL_VOTING') {
-                    setSelectedFinalVote(currentUserVote.final_vote);
+                setCandidates(fetchedCandidates);
+                setUserNominations(userNominations);
+                setUserFinalVotes(userFinalVotes);
+
+                const currentUserNomination = userNominations.find(v => v.award_id === currentAward.id);
+                if (currentUserNomination) {
+                    setSelectedNominations(currentUserNomination.nominations);
+                } else {
+                    setSelectedNominations([]);
                 }
-            } else {
-                setSelectedNominations([]);
-                setSelectedFinalVote(null);
-            }
 
-            if (award.phase === 'RESULTS') {
-                const fetchedResults = await api.getAwardResults(award.id, token);
-                setResults(fetchedResults);
-            }
+                const currentUserFinalVote = userFinalVotes.find(v => v.award_id === currentAward.id);
+                if (currentUserFinalVote) {
+                    setSelectedFinalVote(currentUserFinalVote.nominee_user_id);
+                } else {
+                    setSelectedFinalVote(null);
+                }
 
+                if (currentAward.phase === 'RESULTS') {
+                    const fetchedResults = await api.getAwardResults(currentAward.id, token);
+                    setResults(fetchedResults);
+                }
+            }
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to load page data.';
             showNotification(message, 'error');
         } finally {
             setIsLoading(false);
         }
-    }, [award.id, award.phase, token, user, showNotification]);
+    }, [awardId, token, user, showNotification]);
 
     useEffect(() => {
         fetchPageData();
@@ -72,11 +80,15 @@ const VotingPage: React.FC<VotingPageProps> = ({ award, onBack }) => {
 
     const handleNominationToggle = (userId: string) => {
         setSelectedNominations(prev => {
-            if (prev.includes(userId)) {
+            const isSelected = prev.includes(userId);
+            if (isSelected) {
                 return prev.filter(id => id !== userId);
             }
-            if (prev.length < award.max_nominations) {
+            if (award && prev.length < award.max_nominations) {
                 return [...prev, userId];
+            }
+            if (award) {
+                showNotification(`You can only select up to ${award.max_nominations} nominees.`, 'info');
             }
             return prev;
         });
@@ -87,11 +99,15 @@ const VotingPage: React.FC<VotingPageProps> = ({ award, onBack }) => {
     };
 
     const handleSubmit = async () => {
-        if (!token) return;
+        if (!token || !award) return;
         setIsSubmitting(true);
 
         try {
             if (award.phase === 'NOMINATION') {
+                if (selectedNominations.length !== award.max_nominations) {
+                    showNotification(`You must select exactly ${award.max_nominations} nominees.`, 'error');
+                    return;
+                }
                 await api.submitNominations(award.id, selectedNominations, token);
                 showNotification('Your nominations have been submitted successfully!', 'success');
             } else if (award.phase === 'FINAL_VOTING' && selectedFinalVote) {
@@ -108,7 +124,9 @@ const VotingPage: React.FC<VotingPageProps> = ({ award, onBack }) => {
     };
 
     const renderNominationView = () => {
-        const hasVoted = userVote && userVote.nominations.length > 0;
+        if (!award) return null;
+        const currentUserNomination = userNominations.find(v => v.award_id === award.id);
+        const hasVoted = !!currentUserNomination;
         return (
             <div>
                 <p className="text-gray-300 mb-2">Selecciona hasta {award.max_nominations} nominados.</p>
@@ -117,7 +135,7 @@ const VotingPage: React.FC<VotingPageProps> = ({ award, onBack }) => {
                     {candidates.map(candidate => {
                         const isSelf = candidate.id === user?.id;
                         const isPartner = candidate.id === user?.partner_id;
-                        const isDisabled = isSelf || isPartner || (selectedNominations.length >= award.max_nominations && !selectedNominations.includes(candidate.id)) || hasVoted;
+                        const isDisabled = isSelf || isPartner || (award && selectedNominations.length >= award.max_nominations && !selectedNominations.includes(candidate.id)) || hasVoted;
                         let disabledReason = '';
                         if (isSelf) disabledReason = "No puedes votar por ti mismo.";
                         else if (isPartner) disabledReason = "No puedes votar por tu pareja.";
@@ -140,7 +158,7 @@ const VotingPage: React.FC<VotingPageProps> = ({ award, onBack }) => {
                     <Button
                         onClick={handleSubmit}
                         isLoading={isSubmitting}
-                        disabled={selectedNominations.length === 0}
+                        disabled={award && selectedNominations.length !== award.max_nominations}
                         className="mt-8 w-full sm:w-auto"
                     >
                         Enviar Nominaciones
@@ -151,7 +169,8 @@ const VotingPage: React.FC<VotingPageProps> = ({ award, onBack }) => {
     };
 
     const renderFinalVotingView = () => {
-        const hasVoted = !!userVote?.final_vote;
+        const currentUserFinalVote = userFinalVotes.find(v => v.award_id === award?.id);
+        const hasVoted = !!currentUserFinalVote;
         return (
             <div>
                 <p className="text-gray-300 mb-6">Selecciona un nominado para emitir tu voto final.</p>
@@ -218,9 +237,11 @@ const VotingPage: React.FC<VotingPageProps> = ({ award, onBack }) => {
     };
 
     const renderContent = () => {
-        if (isLoading) return <Spinner />;
+        if (isLoading || !award) return <Spinner />;
 
-        const hasVoted = (award.phase === 'NOMINATION' && userVote && userVote.nominations.length > 0) || (award.phase === 'FINAL_VOTING' && !!userVote?.final_vote);
+        const currentUserNomination = userNominations.find(v => v.award_id === award.id);
+        const currentUserFinalVote = userFinalVotes.find(v => v.award_id === award.id);
+        const hasVoted = (award.phase === 'NOMINATION' && !!currentUserNomination) || (award.phase === 'FINAL_VOTING' && !!currentUserFinalVote);
 
         return (
             <>
@@ -234,14 +255,22 @@ const VotingPage: React.FC<VotingPageProps> = ({ award, onBack }) => {
         )
     };
 
+    if (isLoading) {
+        return <Spinner />;
+    }
+
+    if (!award) {
+        return <p className="text-red-500">Award not found.</p>;
+    }
+
     return (
         <div>
-            <button onClick={onBack} className="flex items-center text-sm text-indigo-400 hover:text-indigo-300 mb-6 font-medium">
+            <Link to="/" className="flex items-center text-sm text-indigo-400 hover:text-indigo-300 mb-6 font-medium">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
                 Volver a Premiaciones
-            </button>
+            </Link>
             <div className="bg-gray-800/50 p-6 sm:p-8 rounded-lg shadow-xl">
                 <h2 className="text-3xl font-bold text-white mb-2">{award.name}</h2>
                 <p className="text-gray-400 mb-8">{award.description}</p>

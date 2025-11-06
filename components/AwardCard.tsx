@@ -3,7 +3,6 @@ import { Award, Phase } from '../types';
 
 interface AwardCardProps {
     award: Award;
-    onSelect: (award: Award) => void;
 }
 
 const phaseStyles: Record<Phase, { bg: string; text: string; label: string }> = {
@@ -13,13 +12,12 @@ const phaseStyles: Record<Phase, { bg: string; text: string; label: string }> = 
     CLOSED: { bg: 'bg-gray-600', text: 'text-gray-200', label: 'Cerrado' },
 };
 
-const AwardCard: React.FC<AwardCardProps> = ({ award, onSelect }) => {
+const AwardCard: React.FC<AwardCardProps> = ({ award }) => {
     const style = phaseStyles[award.phase] || phaseStyles.CLOSED;
 
     return (
         <div
             className="bg-gray-800 rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-1 transition-transform duration-300 ease-in-out cursor-pointer flex flex-col"
-            onClick={() => onSelect(award)}
         >
             <div className="p-6 flex-grow">
                 <div className="flex items-center justify-between mb-4">

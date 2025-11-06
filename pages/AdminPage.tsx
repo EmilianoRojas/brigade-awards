@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { Award } from '../types';
 import { useAuth } from '../hooks/useAuth';
@@ -67,7 +68,7 @@ const AdminPage: React.FC = () => {
             // Update the local state to reflect the change
             setAwards(prevAwards =>
                 prevAwards.map(award =>
-                    award.phase === fromPhase ? { ...award, phase: toPhase } : award
+                    award.phase === fromPhase ? { ...award, phase: toPhase as Award['phase'] } : award
                 )
             );
             addNotification(`All awards in ${fromPhase} have been moved to ${toPhase}.`, 'success');
@@ -118,6 +119,56 @@ const AdminPage: React.FC = () => {
         } catch (error: any) {
             console.error('Error changing bulk award status:', error);
             addNotification(error.message || 'Failed to change bulk award status', 'error');
+        }
+    };
+
+    const handleEndNomination = async (awardId: string) => {
+        try {
+            const token = (await supabase.auth.getSession()).data.session?.access_token;
+            if (!token) {
+                throw new Error("Authentication token not found.");
+            }
+
+            const { error } = await supabase.functions.invoke('end-nomination-phase', {
+                body: { award_id: awardId },
+            });
+
+            if (error) throw error;
+
+            setAwards(prevAwards =>
+                prevAwards.map(award =>
+                    award.id === awardId ? { ...award, phase: 'FINAL_VOTING' } : award
+                )
+            );
+            addNotification(`Nomination phase ended for the award.`, 'success');
+        } catch (error: any) {
+            console.error('Error ending nomination phase:', error);
+            addNotification(error.message || 'Failed to end nomination phase', 'error');
+        }
+    };
+
+    const handleEndVoting = async (awardId: string) => {
+        try {
+            const token = (await supabase.auth.getSession()).data.session?.access_token;
+            if (!token) {
+                throw new Error("Authentication token not found.");
+            }
+
+            const { error } = await supabase.functions.invoke('end-voting-phase', {
+                body: { award_id: awardId },
+            });
+
+            if (error) throw error;
+
+            setAwards(prevAwards =>
+                prevAwards.map(award =>
+                    award.id === awardId ? { ...award, phase: 'RESULTS' } : award
+                )
+            );
+            addNotification(`Voting phase ended for the award.`, 'success');
+        } catch (error: any) {
+            console.error('Error ending voting phase:', error);
+            addNotification(error.message || 'Failed to end voting phase', 'error');
         }
     };
 
@@ -206,13 +257,28 @@ const AdminPage: React.FC = () => {
                                 >
                                     {award.active ? 'Desactivar' : 'Activar'}
                                 </Button>
-                                {award.phase === 'RESULTS' && (
+                                {award.phase === 'NOMINATION' && (
                                     <Button
-                                        onClick={() => alert('Show results logic to be implemented')}
+                                        onClick={() => handleEndNomination(award.id)}
                                         className="mt-4 ml-2"
                                     >
-                                        Ver Resultados
+                                        End Nomination
                                     </Button>
+                                )}
+                                {award.phase === 'FINAL_VOTING' && (
+                                    <Button
+                                        onClick={() => handleEndVoting(award.id)}
+                                        className="mt-4 ml-2"
+                                    >
+                                        End Voting
+                                    </Button>
+                                )}
+                                {award.phase === 'RESULTS' && (
+                                    <Link to={`/results/${award.id}`}>
+                                        <Button className="mt-4 ml-2">
+                                            Ver Resultados
+                                        </Button>
+                                    </Link>
                                 )}
                             </div>
                         ))}

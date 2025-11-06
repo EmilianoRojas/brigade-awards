@@ -74,11 +74,14 @@ Deno.serve(async (req) => {
 
     const { error } = await supabase
       .from('final_votes')
-      .upsert({
-        award_id: award_id,
-        user_id: user.id,
-        nominee_user_id: nominee_user_id
-      });
+      .upsert(
+        {
+          award_id: award_id,
+          voter_id: user.id,
+          nominee_user_id: nominee_user_id,
+        },
+        { onConflict: 'voter_id,award_id' }
+      );
 
     if (error) throw error;
 
