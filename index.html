@@ -6,6 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Brigade Awards V</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      (function() {
+        const redirect = sessionStorage.redirect;
+        delete sessionStorage.redirect;
+        if (redirect && redirect != location.href) {
+          history.replaceState(null, null, redirect);
+        }
+      })();
+    </script>
 
 <link rel="stylesheet" href="/index.css">
 <style>
@@ -35,7 +44,7 @@
   }
 }
 </script>
-  <script type="module" crossorigin src="/brigade-awards/assets/index-D7ImdsKw.js"></script>
+  <script type="module" crossorigin src="/brigade-awards/assets/index-CF3tuP3c.js"></script>
 </head>
   <body class="bg-gray-900 text-gray-100">
     <div id="root"></div>
