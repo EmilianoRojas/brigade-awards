@@ -12,6 +12,11 @@ const apiFetch = async <T,>(endpoint: string, options: RequestInit = {}): Promis
         },
     });
 
+    if (response.status === 401) {
+        window.location.href = '/login';
+        throw new Error('Session expired. Please log in again.');
+    }
+
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
