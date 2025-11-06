@@ -88,7 +88,8 @@ Deno.serve(async (req) => {
         // Reset all awards to the NOMINATION phase
         const { error: awardsError } = await supabase
             .from('awards')
-            .update({ phase: 'NOMINATION' });
+            .update({ phase: 'NOMINATION' })
+            .neq('id', 0); // This is a placeholder to update all rows
 
         if (awardsError) {
             console.error("Error resetting awards phase:", awardsError.message);
