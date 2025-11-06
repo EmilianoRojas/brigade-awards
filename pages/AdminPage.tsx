@@ -6,12 +6,14 @@ import { useAuth } from '../hooks/useAuth';
 import Spinner from '../components/Spinner';
 import Button from '../components/Button';
 import { useNotification } from '../contexts/NotificationContext';
-import { toggleAwardActive, getAllAwards, bulkActivateAwards, bulkDeactivateAwards } from '../services/api';
+import { toggleAwardActive, getAllAwards, bulkActivateAwards, bulkDeactivateAwards, resetAwards } from '../services/api';
 
 const AdminPage: React.FC = () => {
     const { user, isAdmin } = useAuth();
     const [awards, setAwards] = useState<Award[]>([]);
     const [loading, setLoading] = useState(true);
+    const [buttonLoading, setButtonLoading] = useState<{ [key: string]: boolean }>({});
+    const [bulkActionLoading, setBulkActionLoading] = useState<{ [key: string]: boolean }>({});
     const { addNotification } = useNotification();
 
     useEffect(() => {
@@ -53,6 +55,8 @@ const AdminPage: React.FC = () => {
     };
 
     const handleBulkPhaseChange = async (fromPhase: string, toPhase: string) => {
+        const actionName = `${fromPhase}_${toPhase}`;
+        setBulkActionLoading(prev => ({ ...prev, [actionName]: true }));
         try {
             const token = (await supabase.auth.getSession()).data.session?.access_token;
             if (!token) {
@@ -75,6 +79,8 @@ const AdminPage: React.FC = () => {
         } catch (error: any) {
             console.error('Error updating award phases:', error);
             addNotification(error.message || 'Failed to update award phases', 'error');
+        } finally {
+            setBulkActionLoading(prev => ({ ...prev, [actionName]: false }));
         }
     };
 
@@ -123,6 +129,7 @@ const AdminPage: React.FC = () => {
     };
 
     const handleEndNomination = async (awardId: string) => {
+        setButtonLoading(prev => ({ ...prev, [awardId]: true }));
         try {
             const token = (await supabase.auth.getSession()).data.session?.access_token;
             if (!token) {
@@ -144,10 +151,13 @@ const AdminPage: React.FC = () => {
         } catch (error: any) {
             console.error('Error ending nomination phase:', error);
             addNotification(error.message || 'Failed to end nomination phase', 'error');
+        } finally {
+            setButtonLoading(prev => ({ ...prev, [awardId]: false }));
         }
     };
 
     const handleEndVoting = async (awardId: string) => {
+        setButtonLoading(prev => ({ ...prev, [awardId]: true }));
         try {
             const token = (await supabase.auth.getSession()).data.session?.access_token;
             if (!token) {
@@ -169,6 +179,30 @@ const AdminPage: React.FC = () => {
         } catch (error: any) {
             console.error('Error ending voting phase:', error);
             addNotification(error.message || 'Failed to end voting phase', 'error');
+        } finally {
+            setButtonLoading(prev => ({ ...prev, [awardId]: false }));
+        }
+    };
+
+    const handleResetAwards = async () => {
+        setBulkActionLoading(prev => ({ ...prev, ['reset_awards']: true }));
+        try {
+            const token = (await supabase.auth.getSession()).data.session?.access_token;
+            if (!token) {
+                throw new Error("Authentication token not found.");
+            }
+
+            await resetAwards(token);
+
+            // Refetch awards to update the UI
+            const data = await getAllAwards(token);
+            setAwards(data || []);
+            addNotification('Todas las premiaciones han sido reiniciadas.', 'success');
+        } catch (error: any) {
+            console.error('Error resetting awards:', error);
+            addNotification(error.message || 'Failed to reset awards', 'error');
+        } finally {
+            setBulkActionLoading(prev => ({ ...prev, ['reset_awards']: false }));
         }
     };
 
@@ -207,12 +241,14 @@ const AdminPage: React.FC = () => {
                         <Button
                             onClick={() => handleBulkPhaseChange('NOMINATION', 'FINAL_VOTING')}
                             className="w-full text-sm px-4 py-2"
+                            isLoading={bulkActionLoading['NOMINATION_FINAL_VOTING']}
                         >
                             Finalizar Nominación
                         </Button>
                         <Button
                             onClick={() => handleBulkPhaseChange('FINAL_VOTING', 'RESULTS')}
                             className="w-full text-sm px-4 py-2"
+                            isLoading={bulkActionLoading['FINAL_VOTING_RESULTS']}
                         >
                             Finalizar Votación
                         </Button>
@@ -243,6 +279,24 @@ const AdminPage: React.FC = () => {
                     </div>
                 </div>
 
+                <div className="mb-8 p-4 border rounded-lg shadow-sm bg-red-50">
+                    <h2 className="text-lg sm:text-xl font-semibold mb-4 text-red-800">Zona de Peligro</h2>
+                    <p className="text-red-700 mb-4">
+                        Esta acción reiniciará todas las premiaciones a su estado inicial (Nominación) y borrará todos los votos y nominaciones. Esta acción no se puede deshacer.
+                    </p>
+                    <Button
+                        onClick={() => {
+                            if (window.confirm('¿Estás seguro de que quieres reiniciar todas las premiaciones? Esta acción es irreversible.')) {
+                                handleResetAwards();
+                            }
+                        }}
+                        className="w-full text-sm px-4 py-2 bg-red-600 hover:bg-red-700 text-white"
+                        isLoading={bulkActionLoading['reset_awards']}
+                    >
+                        Reiniciar Premiaciones
+                    </Button>
+                </div>
+
                 <div>
                     <h2 className="text-xl font-semibold mb-2">Estado Individual de Premiaciones</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -261,6 +315,7 @@ const AdminPage: React.FC = () => {
                                     <Button
                                         onClick={() => handleEndNomination(award.id)}
                                         className="mt-4 ml-2"
+                                        isLoading={buttonLoading[award.id]}
                                     >
                                         End Nomination
                                     </Button>
@@ -269,6 +324,7 @@ const AdminPage: React.FC = () => {
                                     <Button
                                         onClick={() => handleEndVoting(award.id)}
                                         className="mt-4 ml-2"
+                                        isLoading={buttonLoading[award.id]}
                                     >
                                         End Voting
                                     </Button>

@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthUser } from '../types';
 import { supabase } from '../supabaseClient';
 import { Session } from '@supabase/supabase-js';
@@ -23,6 +24,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
+    const navigate = useNavigate();
 
     const handleSession = useCallback((session: Session | null) => {
         if (session?.user) {
@@ -66,7 +68,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await supabase.auth.signOut();
         // The onAuthStateChange listener will handle setting user/token to null
         setIsLoading(false);
-    }, []);
+        navigate('/login');
+    }, [navigate]);
 
     const value = {
         isAuthenticated: !!token && !!user,

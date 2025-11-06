@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { AwardResult } from '../types';
-import { getAwardResults } from '../services/api';
+import { Award, AwardResult } from '../types';
+import { getAwardResults, getAwards } from '../services/api';
 import Spinner from '../components/Spinner';
 import { useNotification } from '../contexts/NotificationContext';
 import ResultsChart from '../components/ResultsChart';
@@ -10,6 +10,7 @@ import ResultsChart from '../components/ResultsChart';
 const ResultsPage: React.FC = () => {
     const { awardId } = useParams<{ awardId: string }>();
     const [results, setResults] = useState<AwardResult[]>([]);
+    const [awardTitle, setAwardTitle] = useState('');
     const [loading, setLoading] = useState(true);
     const { addNotification } = useNotification();
 
@@ -27,8 +28,14 @@ const ResultsPage: React.FC = () => {
                 if (!token) {
                     throw new Error("Authentication token not found.");
                 }
-                const data = await getAwardResults(awardId, token);
-                setResults(data || []);
+                const resultsData = await getAwardResults(awardId, token);
+                setResults(resultsData || []);
+
+                const awardsData = await getAwards(token);
+                const currentAward = awardsData.find(award => award.id === awardId);
+                if (currentAward) {
+                    setAwardTitle(currentAward.name);
+                }
             } catch (error: any) {
                 console.error('Error fetching award results:', error);
                 addNotification(error.message || 'Failed to fetch award results', 'error');
@@ -46,7 +53,7 @@ const ResultsPage: React.FC = () => {
 
     return (
         <div className="container mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-4">Resultados de la Votación</h1>
+            <h1 className="text-2xl font-bold mb-4">Resultados de la Votación: {awardTitle}</h1>
             {results.length > 0 ? (
                 <ResultsChart data={results} />
             ) : (

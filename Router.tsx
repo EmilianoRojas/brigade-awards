@@ -18,9 +18,12 @@ const PrivateRoute: React.FC<{ children: React.ReactElement }> = ({ children }) 
 };
 
 const AdminRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
-    const { isAdmin, isLoading } = useAuth();
+    const { isAuthenticated, isAdmin, isLoading } = useAuth();
     if (isLoading) {
         return <Spinner />;
+    }
+    if (!isAuthenticated) {
+        return <Navigate to="/login" />;
     }
     return isAdmin ? children : <div className="text-center text-xl mt-10">No tienes permiso para ver esta pagina</div>;
 };

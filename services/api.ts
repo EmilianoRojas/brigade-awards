@@ -86,6 +86,13 @@ export const toggleAwardActive = (awardId: string, active: boolean, token: strin
     });
 };
 
+export const resetAwards = (token: string): Promise<{ message: string }> => {
+    return apiFetch('/reset-awards', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+    });
+};
+
 export const getAllAwards = async (token: string): Promise<Award[]> => {
     const awards = await apiFetch<Award[]>('/get-all-awards', {
         headers: { Authorization: `Bearer ${token}` }
