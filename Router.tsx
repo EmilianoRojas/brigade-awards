@@ -6,6 +6,7 @@ import AwardsPage from './pages/AwardsPage';
 import VotingPage from './pages/VotingPage';
 import AdminPage from './pages/AdminPage';
 import ResultsPage from './pages/ResultsPage';
+import ChangePasswordPage from './pages/ChangePasswordPage';
 import Header from './components/Header';
 import Spinner from './components/Spinner';
 
@@ -46,6 +47,7 @@ const AppRouter: React.FC = () => {
                     <Route path="/voting/:awardId" element={<PrivateRoute><VotingPage /></PrivateRoute>} />
                     <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
                     <Route path="/results/:awardId" element={<AdminRoute><ResultsPage /></AdminRoute>} />
+                    <Route path="/change-password" element={<PrivateRoute><ChangePasswordPage /></PrivateRoute>} />
                     <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
             </main>

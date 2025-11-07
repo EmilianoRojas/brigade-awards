@@ -28,11 +28,11 @@ const UserSelectionCard: React.FC<UserSelectionCardProps> = ({ user, isSelected,
 
     const userInfo = (
         <>
-            <img
+            {/* <img
                 className="h-12 w-12 rounded-full object-cover"
                 src={user.avatar_url || `https://picsum.photos/seed/${user.id}/200`}
                 alt={user.full_name}
-            />
+            /> */}
             <div className="flex-grow">
                 <span className="font-medium text-gray-200">{user.full_name}</span>
                 {isDisabled && disabledReason && selectionType === 'button' && (
@@ -73,11 +73,11 @@ const UserSelectionCard: React.FC<UserSelectionCardProps> = ({ user, isSelected,
                 onChange={() => onToggle(user.id)}
                 className={inputClasses}
             />
-            <img
+            {/* <img
                 className="h-12 w-12 rounded-full object-cover"
                 src={user.avatar_url || `https://picsum.photos/seed/${user.id}/200`}
                 alt={user.full_name}
-            />
+            /> */}
             <span className="font-medium text-gray-200">{user.full_name}</span>
         </label>
     );

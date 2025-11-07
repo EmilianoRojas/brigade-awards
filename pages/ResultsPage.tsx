@@ -4,7 +4,7 @@ import { supabase } from '../supabaseClient';
 import { Award, AwardResult } from '../types';
 import { getAwardResults, getAwards } from '../services/api';
 import Spinner from '../components/Spinner';
-import { useNotification } from '../contexts/NotificationContext';
+import { useNotification } from '../hooks/useNotification';
 import ResultsChart from '../components/ResultsChart';
 
 const ResultsPage: React.FC = () => {

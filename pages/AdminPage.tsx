@@ -5,7 +5,7 @@ import { Award } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import Spinner from '../components/Spinner';
 import Button from '../components/Button';
-import { useNotification } from '../contexts/NotificationContext';
+import { useNotification } from '../hooks/useNotification';
 import { toggleAwardActive, getAllAwards, bulkActivateAwards, bulkDeactivateAwards, resetAwards } from '../services/api';
 
 const AdminPage: React.FC = () => {

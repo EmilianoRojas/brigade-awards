@@ -6,5 +6,5 @@ export const useNotification = () => {
     if (context === undefined) {
         throw new Error('useNotification must be used within a NotificationProvider');
     }
-    return context;
+    return { ...context, addNotification: context.showNotification };
 };

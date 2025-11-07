@@ -222,7 +222,7 @@ const VotingPage: React.FC = () => {
                                                 <span className="text-gray-400">+</span>
                                                 {secondNominee ? (
                                                     <div className="flex items-center space-x-2">
-                                                        <img src={secondNominee.avatar_url || `https://picsum.photos/seed/${secondNominee.id}/40`} alt={secondNominee.full_name} className="h-10 w-10 rounded-full" />
+                                                        {/* <img src={secondNominee.avatar_url || `https://picsum.photos/seed/${secondNominee.id}/40`} alt={secondNominee.full_name} className="h-10 w-10 rounded-full" /> */}
                                                         <span className="text-white font-medium">{secondNominee.full_name}</span>
                                                     </div>
                                                 ) : (

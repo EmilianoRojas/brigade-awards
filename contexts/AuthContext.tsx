@@ -1,8 +1,9 @@
-import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthUser } from '../types';
 import { supabase } from '../supabaseClient';
 import { Session } from '@supabase/supabase-js';
+import eventBus from '../utils/eventBus';
 
 interface AuthContextType {
     isAuthenticated: boolean;
@@ -25,8 +26,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
     const navigate = useNavigate();
+    const isLoggingOutRef = useRef(false);
 
     const handleSession = useCallback((session: Session | null) => {
+        if (isLoggingOutRef.current) {
+            return;
+        }
+
         if (session?.user) {
             if (session.access_token !== token || session.user.id !== user?.id) {
                 setToken(session.access_token);
@@ -65,12 +71,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }, [handleSession]);
 
     const logout = useCallback(async () => {
+        isLoggingOutRef.current = true;
         setIsLoading(true);
-        await supabase.auth.signOut();
-        // The onAuthStateChange listener will handle setting user/token to null
+
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            console.error('Error logging out:', error);
+        }
+
+        setToken(null);
+        setUser(null);
+        setIsAdmin(false);
         setIsLoading(false);
         navigate('/login');
+
+        setTimeout(() => {
+            isLoggingOutRef.current = false;
+        }, 500);
     }, [navigate]);
+
+    useEffect(() => {
+        const handleAuthError = () => {
+            logout();
+        };
+
+        eventBus.on('auth-error', handleAuthError);
+
+        return () => {
+            eventBus.remove('auth-error', handleAuthError);
+        };
+    }, [logout]);
 
     const value = {
         isAuthenticated: !!token && !!user,

@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '../constants';
 import { Award, AwardResult, User, UserNomination } from '../types';
+import eventBus from '../utils/eventBus';
 
 const apiFetch = async <T,>(endpoint: string, options: RequestInit = {}): Promise<T> => {
     const url = `${API_BASE_URL}${endpoint}`;
@@ -13,7 +14,7 @@ const apiFetch = async <T,>(endpoint: string, options: RequestInit = {}): Promis
     });
 
     if (response.status === 401) {
-        window.location.href = '/login';
+        eventBus.dispatch('auth-error');
         throw new Error('Session expired. Please log in again.');
     }
 
@@ -116,5 +117,13 @@ export const bulkDeactivateAwards = (token: string): Promise<{ message: string }
     return apiFetch('/bulk-deactivate-awards', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
+    });
+};
+
+export const updateUserPassword = (password: string, token: string): Promise<{ message: string }> => {
+    return apiFetch('/update-user-password', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ password }),
     });
 };
