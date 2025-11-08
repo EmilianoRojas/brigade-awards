@@ -85,6 +85,7 @@ const AdminPage: React.FC = () => {
     };
 
     const handleToggleActive = async (awardId: string, currentStatus: boolean) => {
+        setButtonLoading(prev => ({ ...prev, [awardId]: true }));
         try {
             const token = (await supabase.auth.getSession()).data.session?.access_token;
             if (!token) {
@@ -102,6 +103,8 @@ const AdminPage: React.FC = () => {
         } catch (error: any) {
             console.error('Error toggling award status:', error);
             addNotification(error.message || 'Failed to update award status', 'error');
+        } finally {
+            setButtonLoading(prev => ({ ...prev, [awardId]: false }));
         }
     };
 
@@ -308,6 +311,7 @@ const AdminPage: React.FC = () => {
                                 <Button
                                     onClick={() => handleToggleActive(award.id, award.active)}
                                     className="mt-4"
+                                    isLoading={buttonLoading[award.id]}
                                 >
                                     {award.active ? 'Desactivar' : 'Activar'}
                                 </Button>
