@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Award, User, UserNomination, AwardResult } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import * as api from '../services/api';
@@ -12,6 +12,7 @@ import { useNotification } from '../hooks/useNotification';
 const VotingPage: React.FC = () => {
     const { awardId } = useParams<{ awardId: string }>();
     const { user, token } = useAuth();
+    const navigate = useNavigate();
     const { showNotification } = useNotification();
     const [award, setAward] = useState<Award | null>(null);
     const [candidates, setCandidates] = useState<User[]>([]);
@@ -181,11 +182,12 @@ const VotingPage: React.FC = () => {
                     await api.submitNominations(award.id, selectedNominations, token);
                 }
                 showNotification('Your nominations have been submitted successfully!', 'success');
+                navigate('/');
             } else if (award.phase === 'FINAL_VOTING' && selectedFinalVote) {
                 await api.submitFinalVote(award.id, selectedFinalVote, token);
                 showNotification('Your vote has been cast successfully!', 'success');
+                navigate('/');
             }
-            await fetchPageData(); // Refresh data to show submission
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Submission failed.';
             showNotification(message, 'error');
