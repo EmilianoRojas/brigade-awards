@@ -142,7 +142,9 @@ Deno.serve(async (req) => {
       })
 
       if (error) throw error;
-      candidates = data || [];
+      const allFinalists = data || [];
+
+      candidates = allFinalists.slice(0, 4);
     }
 
     // For RESULTS or CLOSED phases, an empty array is returned by default, which is correct.

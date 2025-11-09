@@ -7,6 +7,7 @@ import Spinner from '../components/Spinner';
 import Button from '../components/Button';
 import { useNotification } from '../hooks/useNotification';
 import { toggleAwardActive, getAllAwards, bulkActivateAwards, bulkDeactivateAwards, resetAwards } from '../services/api';
+import NomineesModal from '../components/NomineesModal';
 
 const AdminPage: React.FC = () => {
     const { user, isAdmin } = useAuth();
@@ -15,6 +16,8 @@ const AdminPage: React.FC = () => {
     const [buttonLoading, setButtonLoading] = useState<{ [key: string]: boolean }>({});
     const [bulkActionLoading, setBulkActionLoading] = useState<{ [key: string]: boolean }>({});
     const { addNotification } = useNotification();
+    const [viewingNomineesOf, setViewingNomineesOf] = useState<Award | null>(null);
+    const [authToken, setAuthToken] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchAwards = async () => {
@@ -25,6 +28,7 @@ const AdminPage: React.FC = () => {
             try {
                 setLoading(true);
                 const token = (await supabase.auth.getSession()).data.session?.access_token;
+                setAuthToken(token);
                 if (!token) {
                     throw new Error("Authentication token not found.");
                 }
@@ -340,11 +344,27 @@ const AdminPage: React.FC = () => {
                                         </Button>
                                     </Link>
                                 )}
+                                {(award.phase === 'FINAL_VOTING' || award.phase === 'RESULTS' || award.phase === 'CLOSED') && (
+                                    <Button
+                                        onClick={() => setViewingNomineesOf(award)}
+                                        className="mt-4 ml-2"
+                                    >
+                                        Ver Nominados
+                                    </Button>
+                                )}
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
+            {viewingNomineesOf && authToken && (
+                <NomineesModal
+                    awardId={viewingNomineesOf.id}
+                    awardName={viewingNomineesOf.name}
+                    token={authToken}
+                    onClose={() => setViewingNomineesOf(null)}
+                />
+            )}
         </>
     );
 };

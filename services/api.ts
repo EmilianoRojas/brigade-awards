@@ -46,6 +46,12 @@ export const getAwardCandidates = async (awardId: string, token: string): Promis
     return candidates || [];
 };
 
+export const getAwardNominations = async (awardId: string, token: string): Promise<any[]> => {
+    const nominations = await apiFetch<any[]>(`/get-award-nominations?award_id=${awardId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    return nominations || [];
+};
 
 export const getUserVotes = async (token: string): Promise<UserNomination[]> => {
     const userNominations = await apiFetch<UserNomination[]>('/get-user-nominations', {
