@@ -31,9 +31,23 @@ const AwardCard: React.FC<AwardCardProps> = ({ award }) => {
                 </p>
             </div>
             <div className="bg-gray-700 px-6 py-3">
-                <p className="text-indigo-400 text-sm font-medium">
-                    {award.phase === 'NOMINATION' ? `Selecciona ${award.max_nominations} nominados` : 'Ver Detalles y Votar'}
-                </p>
+                <div className="flex items-center justify-between">
+                    <p className="text-indigo-400 text-sm font-medium">
+                        {award.phase === 'NOMINATION' ? `Selecciona ${award.max_nominations} nominados` : 'Ver Detalles y Votar'}
+                    </p>
+                    <div className="flex items-center space-x-2">
+                        {award.has_nominated && (
+                            <span className="text-xs font-semibold text-green-400 bg-green-900/50 px-2 py-1 rounded-full">
+                                Nominado
+                            </span>
+                        )}
+                        {award.has_voted && (
+                            <span className="text-xs font-semibold text-blue-400 bg-blue-900/50 px-2 py-1 rounded-full">
+                                Votado
+                            </span>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );

@@ -108,14 +108,36 @@ Deno.serve(async (req) => {
     }
     // --- End of Auth ---
     const userMetadata = user.user_metadata || {};
-    const { data: allAwards, error } = await supabase.from('awards').select('*').eq('active', true).order('order', {
+    const userId = user.id;
+    // Fetch user's nominations and votes to enrich the award data
+    const {
+      data: nominations,
+      error: nominationsError
+    } = await supabase.from('nominations').select('award_id').eq('nominator_id', userId);
+    if (nominationsError) throw nominationsError;
+    const {
+      data: votes,
+      error: votesError
+    } = await supabase.from('final_votes').select('award_id').eq('voter_id', userId);
+    if (votesError) throw votesError;
+    const nominatedAwardIds = new Set((nominations || []).map(n => n.award_id));
+    const votedAwardIds = new Set((votes || []).map(v => v.award_id));
+    const {
+      data: allAwards,
+      error
+    } = await supabase.from('awards').select('*').eq('active', true).order('order', {
       ascending: true
     });
     if (error) throw error;
-    let filteredAwards = allAwards || [];
+    const enrichedAwards = (allAwards || []).map(award => ({
+      ...award,
+      has_nominated: nominatedAwardIds.has(award.id),
+      has_voted: votedAwardIds.has(award.id)
+    }));
+    let filteredAwards = enrichedAwards;
     // If the user is not an admin, apply the comprehensive filtering rules.
     if (userMetadata.user_group !== 'admin') {
-      filteredAwards = (allAwards || []).filter((award) => {
+      filteredAwards = enrichedAwards.filter(award => {
         // Hide awards that are finished or closed for non-admins.
         if (award.phase === 'RESULTS' || award.phase === 'CLOSED') {
           return false;

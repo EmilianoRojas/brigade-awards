@@ -20,6 +20,8 @@ export interface Award {
     };
     created_at: string;
     active: boolean;
+    has_nominated?: boolean;
+    has_voted?: boolean;
 }
 
 export interface AuthUser {
