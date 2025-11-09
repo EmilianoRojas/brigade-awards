@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
     }
     // --- End of Auth ---
     const userMetadata = user.user_metadata || {};
-    const { data: allAwards, error } = await supabase.from('awards').select('*').eq('active', true).order('created_at', {
+    const { data: allAwards, error } = await supabase.from('awards').select('*').eq('active', true).order('order', {
       ascending: true
     });
     if (error) throw error;

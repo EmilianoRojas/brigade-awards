@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
         const { data: allAwards, error } = await supabase
             .from('awards')
             .select('*')
-            .order('created_at', { ascending: true });
+            .order('order', { ascending: true });
 
         if (error) throw error;
 

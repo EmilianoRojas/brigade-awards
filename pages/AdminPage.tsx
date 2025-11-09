@@ -92,11 +92,11 @@ const AdminPage: React.FC = () => {
                 throw new Error("Authentication token not found.");
             }
 
-            const updatedAward = await toggleAwardActive(awardId, !currentStatus, token);
+            await toggleAwardActive(awardId, !currentStatus, token);
 
             setAwards(prevAwards =>
                 prevAwards.map(award =>
-                    award.id === awardId ? updatedAward : award
+                    award.id === awardId ? { ...award, active: !currentStatus } : award
                 )
             );
             addNotification(`Award status updated successfully.`, 'success');
