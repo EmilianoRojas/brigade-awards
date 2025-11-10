@@ -9,6 +9,17 @@ export interface User {
     user_group?: string;
 }
 
+export interface DuoMember {
+    id: string;
+    full_name: string;
+    avatar_url: string;
+}
+
+export interface Candidate extends User {
+    is_duo: boolean;
+    duo_members?: DuoMember[];
+}
+
 export interface Award {
     id: string;
     name: string;
@@ -45,4 +56,6 @@ export interface AwardResult {
     full_name: string;
     avatar_url: string;
     vote_count: number;
+    is_duo: boolean;
+    duo_members?: DuoMember[];
 }

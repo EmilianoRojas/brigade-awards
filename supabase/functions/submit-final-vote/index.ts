@@ -64,24 +64,24 @@ Deno.serve(async (req) => {
     // --- End of Auth ---
 
 
-    const { award_id, nominee_user_id } = await req.json();
-    if (!award_id || !nominee_user_id) {
-      return new Response(JSON.stringify({ error: 'award_id and nominee_user_id are required' }), {
+    const { award_id, nominee_user_id, nomination_group_id } = await req.json();
+    if (!award_id || (!nominee_user_id && !nomination_group_id)) {
+      return new Response(JSON.stringify({ error: 'award_id and either nominee_user_id or nomination_group_id are required' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       });
     }
 
+    const upsertData = {
+      award_id: award_id,
+      voter_id: user.id,
+      nominee_user_id: nominee_user_id || null,
+      nomination_group_id: nomination_group_id || null,
+    };
+
     const { error } = await supabase
       .from('final_votes')
-      .upsert(
-        {
-          award_id: award_id,
-          voter_id: user.id,
-          nominee_user_id: nominee_user_id,
-        },
-        { onConflict: 'voter_id,award_id' }
-      );
+      .upsert(upsertData, { onConflict: 'voter_id,award_id' });
 
     if (error) throw error;
 

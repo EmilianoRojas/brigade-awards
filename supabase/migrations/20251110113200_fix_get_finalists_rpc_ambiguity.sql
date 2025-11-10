@@ -1,3 +1,5 @@
+DROP FUNCTION IF EXISTS get_finalists_for_award(UUID);
+
 -- This function retrieves all unique nominees for a given award_id.
 -- It's used during the FINAL_VOTING phase to get the list of candidates.
 -- It now handles both individual and duo awards.
@@ -14,7 +16,7 @@ DECLARE
     v_is_duo BOOLEAN;
 BEGIN
     -- Check if the award is a duo award
-    SELECT is_duo INTO v_is_duo FROM public.awards WHERE id = p_award_id;
+    SELECT a.is_duo INTO v_is_duo FROM public.awards a WHERE a.id = p_award_id;
 
     IF v_is_duo THEN
         -- Logic for duo awards

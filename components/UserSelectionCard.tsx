@@ -1,8 +1,8 @@
 import React from 'react';
-import { User } from '../types';
+import { Candidate } from '../types';
 
 interface UserSelectionCardProps {
-    user: User;
+    candidate: Candidate;
     isSelected: boolean;
     isDisabled: boolean;
     onToggle: (userId: string) => void;
@@ -10,7 +10,7 @@ interface UserSelectionCardProps {
     disabledReason?: string;
 }
 
-const UserSelectionCard: React.FC<UserSelectionCardProps> = ({ user, isSelected, isDisabled, onToggle, selectionType, disabledReason }) => {
+const UserSelectionCard: React.FC<UserSelectionCardProps> = ({ candidate, isSelected, isDisabled, onToggle, selectionType, disabledReason }) => {
     const baseCardClasses = 'border-2 rounded-lg p-4 flex items-center space-x-4 transition-all duration-200';
 
     let specificCardClasses = '';
@@ -28,17 +28,36 @@ const UserSelectionCard: React.FC<UserSelectionCardProps> = ({ user, isSelected,
 
     const userInfo = (
         <>
-            {/* <img
-                className="h-12 w-12 rounded-full object-cover"
-                src={user.avatar_url || `https://picsum.photos/seed/${user.id}/200`}
-                alt={user.full_name}
-            /> */}
-            <div className="flex-grow">
-                <span className="font-medium text-gray-200">{user.full_name}</span>
-                {isDisabled && disabledReason && selectionType === 'button' && (
-                    <p className="text-sm text-gray-400">{disabledReason}</p>
-                )}
-            </div>
+            {candidate.is_duo && candidate.duo_members ? (
+                <div className="flex-grow">
+                    <div className="flex items-center space-x-2">
+                        {candidate.duo_members.map(member => (
+                            <div key={member.id} className="flex items-center space-x-2">
+                                {/* <img
+                                    className="h-10 w-10 rounded-full object-cover"
+                                    src={member.avatar_url}
+                                    alt={member.full_name}
+                                /> */}
+                                <span className="font-medium text-gray-200">{member.full_name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ) : (
+                <>
+                    {/* <img
+                        className="h-12 w-12 rounded-full object-cover"
+                        src={candidate.avatar_url || `https://picsum.photos/seed/${candidate.id}/200`}
+                        alt={candidate.full_name}
+                    /> */}
+                    <div className="flex-grow">
+                        <span className="font-medium text-gray-200">{candidate.full_name}</span>
+                        {isDisabled && disabledReason && selectionType === 'button' && (
+                            <p className="text-sm text-gray-400">{disabledReason}</p>
+                        )}
+                    </div>
+                </>
+            )}
         </>
     );
 
@@ -47,7 +66,7 @@ const UserSelectionCard: React.FC<UserSelectionCardProps> = ({ user, isSelected,
             <div className={cardClasses} title={isDisabled ? disabledReason : ''}>
                 {userInfo}
                 <button
-                    onClick={() => onToggle(user.id)}
+                    onClick={() => onToggle(candidate.id)}
                     disabled={isDisabled}
                     className="ml-auto px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors"
                 >
@@ -63,22 +82,17 @@ const UserSelectionCard: React.FC<UserSelectionCardProps> = ({ user, isSelected,
     `;
 
     return (
-        <label htmlFor={`user-${user.id}`} className={cardClasses} title={isDisabled ? disabledReason : ''}>
+        <label htmlFor={`candidate-${candidate.id}`} className={cardClasses} title={isDisabled ? disabledReason : ''}>
             <input
-                id={`user-${user.id}`}
+                id={`candidate-${candidate.id}`}
                 name="nominee"
                 type={selectionType}
                 checked={isSelected}
                 disabled={isDisabled}
-                onChange={() => onToggle(user.id)}
+                onChange={() => onToggle(candidate.id)}
                 className={inputClasses}
             />
-            {/* <img
-                className="h-12 w-12 rounded-full object-cover"
-                src={user.avatar_url || `https://picsum.photos/seed/${user.id}/200`}
-                alt={user.full_name}
-            /> */}
-            <span className="font-medium text-gray-200">{user.full_name}</span>
+            {userInfo}
         </label>
     );
 };

@@ -1,3 +1,5 @@
+DROP FUNCTION IF EXISTS get_finalists_for_award(UUID);
+
 -- This function retrieves all unique nominees for a given award_id.
 -- It's used during the FINAL_VOTING phase to get the list of candidates.
 -- It now handles both individual and duo awards.

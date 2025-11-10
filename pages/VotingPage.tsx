@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Award, User, UserNomination, AwardResult } from '../types';
+import { Award, Candidate, UserNomination, AwardResult } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import * as api from '../services/api';
 import Spinner from '../components/Spinner';
@@ -15,7 +15,7 @@ const VotingPage: React.FC = () => {
     const navigate = useNavigate();
     const { showNotification } = useNotification();
     const [award, setAward] = useState<Award | null>(null);
-    const [candidates, setCandidates] = useState<User[]>([]);
+    const [candidates, setCandidates] = useState<Candidate[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [userNominations, setUserNominations] = useState<UserNomination[]>([]);
@@ -184,7 +184,12 @@ const VotingPage: React.FC = () => {
                 showNotification('Your nominations have been submitted successfully!', 'success');
                 navigate('/');
             } else if (award.phase === 'FINAL_VOTING' && selectedFinalVote) {
-                await api.submitFinalVote(award.id, selectedFinalVote, token);
+                const selectedCandidate = candidates.find(c => c.id === selectedFinalVote);
+                if (selectedCandidate?.is_duo) {
+                    await api.submitFinalVote(award.id, null, selectedFinalVote, token);
+                } else {
+                    await api.submitFinalVote(award.id, selectedFinalVote, null, token);
+                }
                 showNotification('Your vote has been cast successfully!', 'success');
                 navigate('/');
             }
@@ -265,7 +270,7 @@ const VotingPage: React.FC = () => {
                             return (
                                 <UserSelectionCard
                                     key={candidate.id}
-                                    user={candidate}
+                                    candidate={candidate}
                                     isSelected={selectedNominations.includes(candidate.id)}
                                     isDisabled={isDisabled}
                                     onToggle={handleNominationToggle}
@@ -311,7 +316,7 @@ const VotingPage: React.FC = () => {
                         return (
                             <UserSelectionCard
                                 key={candidate.id}
-                                user={candidate}
+                                candidate={candidate}
                                 isSelected={selectedNominations.includes(candidate.id)}
                                 isDisabled={isDisabled}
                                 onToggle={handleNominationToggle}
@@ -354,7 +359,7 @@ const VotingPage: React.FC = () => {
                         return (
                             <UserSelectionCard
                                 key={candidate.id}
-                                user={candidate}
+                                candidate={candidate}
                                 isSelected={selectedFinalVote === candidate.id}
                                 isDisabled={isDisabled}
                                 onToggle={handleFinalVoteSelect}
@@ -388,11 +393,24 @@ const VotingPage: React.FC = () => {
                 <div className="bg-gray-800 p-6 rounded-lg mb-8 text-center">
                     <h3 className="text-lg font-medium text-indigo-400">Ganador</h3>
                     <div className="mt-4 flex flex-col items-center">
-                        <img
-                            className="h-24 w-24 rounded-full object-cover ring-4 ring-indigo-500"
-                            src={winner.avatar_url || `https://picsum.photos/seed/${winner.nominee_id}/200`}
-                            alt={winner.full_name}
-                        />
+                        {winner.is_duo && winner.duo_members ? (
+                            <div className="flex -space-x-8">
+                                {winner.duo_members.map(member => (
+                                    <img
+                                        key={member.id}
+                                        className="h-24 w-24 rounded-full object-cover ring-4 ring-indigo-500"
+                                        src={member.avatar_url}
+                                        alt={member.full_name}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <img
+                                className="h-24 w-24 rounded-full object-cover ring-4 ring-indigo-500"
+                                src={winner.avatar_url || `https://picsum.photos/seed/${winner.nominee_id}/200`}
+                                alt={winner.full_name}
+                            />
+                        )}
                         <p className="mt-4 text-2xl font-bold text-white">{winner.full_name}</p>
                         <p className="text-gray-300">{winner.vote_count} Votos</p>
                     </div>

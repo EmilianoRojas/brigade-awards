@@ -74,11 +74,15 @@ export const submitNominations = (awardId: string, nomineeIds: string[] | string
     });
 };
 
-export const submitFinalVote = (awardId: string, nomineeUserId: string, token: string): Promise<void> => {
+export const submitFinalVote = (awardId: string, nomineeUserId: string | null, nominationGroupId: string | null, token: string): Promise<void> => {
     return apiFetch('/submit-final-vote', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ award_id: awardId, nominee_user_id: nomineeUserId }),
+        body: JSON.stringify({
+            award_id: awardId,
+            nominee_user_id: nomineeUserId,
+            nomination_group_id: nominationGroupId,
+        }),
     });
 };
 
