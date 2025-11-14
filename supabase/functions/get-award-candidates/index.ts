@@ -144,7 +144,12 @@ Deno.serve(async (req) => {
       if (error) throw error;
       const allFinalists = data || [];
 
-      candidates = allFinalists.slice(0, 4);
+      // Special case for 'Miss Award' to include all 8 girls.
+      if (awardId === '73152573-554e-4204-a98e-0db82b8a2e93') {
+        candidates = allFinalists.slice(0, 8); // Return all 8 finalists
+      } else {
+        candidates = allFinalists.slice(0, 4); // Default behavior for other awards
+      }
     }
 
     // For RESULTS or CLOSED phases, an empty array is returned by default, which is correct.
