@@ -148,22 +148,25 @@ Deno.serve(async (req) => {
       if (awardId === '73152573-554e-4204-a98e-0db82b8a2e93') {
         candidates = allFinalists.slice(0, 8); // Return all 8 finalists
       } else {
-        candidates = allFinalists.slice(0, 4); // Default behavior for other awards
+        if (awardId === '30610b13-f60b-4a91-8532-73fbc430f99d') {
+          candidates = allFinalists; // Return all 8 finalists
+        } else {
+          candidates = allFinalists.slice(0, 4); // Default behavior for other awards
+        }
       }
+
+      // For RESULTS or CLOSED phases, an empty array is returned by default, which is correct.
+
+      return new Response(JSON.stringify(candidates), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      })
+
+    } catch (error) {
+      console.error("Error in get-award-candidates:", error);
+      return new Response(JSON.stringify({ error: error.message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      })
     }
-
-    // For RESULTS or CLOSED phases, an empty array is returned by default, which is correct.
-
-    return new Response(JSON.stringify(candidates), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    })
-
-  } catch (error) {
-    console.error("Error in get-award-candidates:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    })
-  }
-})
+  })
